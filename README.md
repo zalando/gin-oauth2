@@ -30,7 +30,6 @@ import (
 	"golang.org/x/oauth2"
 )
 
-//var USERS []ginoauth2.AccessTuple = []ginoauth2.AccessTuple{{"employees", "njuettner", "Nick Jüttner"}}
 var USERS []ginoauth2.AccessTuple = []ginoauth2.AccessTuple{{"employees", "sszuecs", "Sandor Szücs"}, {"employees", "njuettner", "Nick Jüttner"}}
 
 var OAuth2Endpoint = oauth2.Endpoint{
