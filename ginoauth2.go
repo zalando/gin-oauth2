@@ -202,11 +202,12 @@ func (t *TokenContainer) Valid() bool {
 // Authorization function that checks UID scope
 // TokenContainer must be Valid
 // []AccessTuple: [{Realm:employee Uid:sszuecs Cn:Sandor Szücs} {Realm:employee Uid:njuettner Cn:Nick Jüttner}]
-func UidCheck(tc *TokenContainer, access_tuple []AccessTuple) bool {
+func UidCheck(tc *TokenContainer, access_tuple []AccessTuple, ctx *gin.Context) bool {
 	uid := tc.Scopes["uid"].(string)
 	for idx := range access_tuple {
 		at := access_tuple[idx]
 		if uid == at.Uid {
+			ctx.Set("uid", uid) //in this way I can set the authorized uid
 			glog.Infof("Grant access to %s\n", uid)
 			return true
 		}
@@ -230,7 +231,7 @@ func UidCheck(tc *TokenContainer, access_tuple []AccessTuple) bool {
 //		c.JSON(200, gin.H{"message": "Hello from private"})
 //	})
 //
-func Auth(accessCheckFunction func(tc *TokenContainer, access_tuple []AccessTuple) bool, endpoints oauth2.Endpoint, users []AccessTuple) gin.HandlerFunc {
+func Auth(accessCheckFunction func(tc *TokenContainer, access_tuple []AccessTuple, ctx *gin.Context) bool, endpoints oauth2.Endpoint, users []AccessTuple) gin.HandlerFunc {
 	// init
 	glog.Infof("Register allowed users: %+v", users)
 	AuthInfoURL = endpoints.TokenURL
@@ -252,7 +253,7 @@ func Auth(accessCheckFunction func(tc *TokenContainer, access_tuple []AccessTupl
 			return
 		}
 
-		if !accessCheckFunction(token_container, users) {
+		if !accessCheckFunction(token_container, users, ctx) {
 			ctx.AbortWithError(http.StatusForbidden, errors.New("Access to the Resource is fobidden"))
 			return
 		}
