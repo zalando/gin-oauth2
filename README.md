@@ -41,10 +41,9 @@ func main() {
 
 	flag.Parse()
 	router := gin.New()
-	router.Use(gin.Logger())
 	router.Use(ginglog.Logger(3 * time.Second))
+	router.Use(ginoauth2.RequestLogger("uid", "data"))
 	router.Use(gin.Recovery())
-    router.Use(ginoauth2.RequestLogger("uid", "data"))
 
 	public := router.Group("/api")
 	public.GET("/", func(c *gin.Context) {
@@ -66,7 +65,17 @@ func main() {
 
 Run example app:
 
-    % go run example/main.go
+    % go run example/main.go -v=2 -logtostderr
+    [GIN-debug] [WARNING] Running in "debug" mode. Switch to "release" mode in production.
+    - using env:   export GIN_MODE=release
+    - using code:  gin.SetMode(gin.ReleaseMode)
+    [GIN-debug] GET   /api/                     --> main.func·001 (4 handlers)
+    I1028 10:12:44.908274   22325 ginoauth2.go:238] Register allowed users: [{Realm:employees Uid:sszuecs Cn:Sandor Szücs} {Realm:employees Uid:njuettner Cn:Nick Jüttner}]
+    [GIN-debug] GET   /api/private/             --> main.func·002 (5 handlers)
+    I1028 10:12:44.908342   22325 main.go:41] bootstrapped application
+    [GIN-debug] Listening and serving HTTP on :8081
+    I1028 10:12:46.794502   22325 ginoauth2.go:213] Grant access to sszuecs
+    I1028 10:12:46.794571   22325 ginglog.go:93] [GIN] | 200 | 194.162911ms | [::1]:58629 |   GET     /api/private/
 
 Get an Access Token from your token provider (```oauth2.Endpoint.AuthURL```):
 
@@ -75,7 +84,8 @@ Get an Access Token from your token provider (```oauth2.Endpoint.AuthURL```):
 
 Request:
 
-    curl --request GET --header "Authorization: Bearer 07c39a44-23f2-3012-a6f7-5334c5f9a51f" http://localhost:8081/api/private
+    % curl --request GET --header "Authorization: Bearer 07c39a44-23f2-3012-a6f7-5334c5f9a51f" http://localhost:8081/api/private
+    {"message":"Hello from private"}
 
 ## License
 

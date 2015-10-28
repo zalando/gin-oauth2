@@ -15,16 +15,16 @@ import (
 var USERS []ginoauth2.AccessTuple = []ginoauth2.AccessTuple{{"employees", "sszuecs", "Sandor Szücs"}, {"employees", "njuettner", "Nick Jüttner"}}
 
 var OAuth2Endpoint = oauth2.Endpoint{
-	AuthURL:  "https://token.oauth2.corp.com/access_token",
-	TokenURL: "https://oauth2.corp.com/corp/oauth2/tokeninfo",
+	AuthURL:  "https://token.auth.zalando.com/access_token",
+	TokenURL: "https://auth.zalando.com/z/oauth2/tokeninfo",
 }
 
 func main() {
 
 	flag.Parse()
 	router := gin.New()
-	router.Use(gin.Logger())
 	router.Use(ginglog.Logger(3 * time.Second))
+	router.Use(ginoauth2.RequestLogger("uid", "data"))
 	router.Use(gin.Recovery())
 
 	public := router.Group("/api")

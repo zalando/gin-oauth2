@@ -265,11 +265,24 @@ func Auth(accessCheckFunction func(tc *TokenContainer, access_tuple []AccessTupl
 	}
 }
 
-//RequestLogger is a middleware that logs all the request and prints relevant information.
-//This can be used for logging all the requests that contain important information and are authorized.
-//The assumption is that the request to log has a content and an Id identifiying who made the request
-//uIdKey string to use as key to get the uid from the context
-//contentKey string to use as key to get the content to be logged from the context
+// RequestLogger is a middleware that logs all the request and prints
+// relevant information.  This can be used for logging all the
+// requests that contain important information and are authorized.
+// The assumption is that the request to log has a content and an Id
+// identifiying who made the request uIdKey string to use as key to
+// get the uid from the context contentKey string to use as key to get
+// the content to be logged from the context.
+//
+// Example:
+//
+//      var endpoints oauth2.Endpoint = oauth2.Endpoint{
+//	        AuthURL:  "https://token.oauth2.corp.com/access_token",
+//	        TokenURL: "https://oauth2.corp.com/corp/oauth2/tokeninfo",
+//      }
+//      var acl []ginoauth2.AccessTuple = []ginoauth2.AccessTuple{{"employee", 1070, "sszuecs"}, {"employee", 1114, "njuettner"}}
+//      router := gin.Default()
+//      router.Use(ginoauth2.RequestLogger("uid", "data"))
+//
 func RequestLogger(uIdKey string, contentKey string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		request := c.Request
