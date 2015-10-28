@@ -45,6 +45,7 @@ package ginoauth2
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -202,6 +203,7 @@ func (t *TokenContainer) Valid() bool {
 // Authorization function that checks UID scope
 // TokenContainer must be Valid
 // []AccessTuple: [{Realm:employee Uid:sszuecs Cn:Sandor Szücs} {Realm:employee Uid:njuettner Cn:Nick Jüttner}]
+// gin.Context gin contex
 func UidCheck(tc *TokenContainer, access_tuple []AccessTuple, ctx *gin.Context) bool {
 	uid := tc.Scopes["uid"].(string)
 	for idx := range access_tuple {
@@ -260,6 +262,32 @@ func Auth(accessCheckFunction func(tc *TokenContainer, access_tuple []AccessTupl
 
 		// access allowed
 		ctx.Writer.Header().Set("Bearer", token_container.Token.AccessToken)
+	}
+}
+
+//RequestLogger is a middleware that logs all the request and prints relevant information.
+//This can be used for logging all the requests that contain important information and are authorized.
+//The assumption is that the request to log has a content and an Id identifiying who made the request
+//uIdKey string to use as key to get the uid from the context
+//contentKey string to use as key to get the content to be logged from the context
+func RequestLogger(uIdKey string, contentKey string) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		request := c.Request
+		c.Next()
+		err := c.Errors
+		if request.Method != "GET" && err == nil {
+			data, e := c.Get(contentKey)
+			if e == false { //key is non existent
+				if glog.V(2) {
+					glog.Info("ERROR - content not set.")
+				}
+			} else {
+				if glog.V(2) {
+					id, _ := c.Get(uIdKey)
+					glog.Info(fmt.Sprintf("Request: %+v for %s", data, id))
+				}
+			}
+		}
 	}
 }
 

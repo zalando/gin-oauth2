@@ -44,6 +44,7 @@ func main() {
 	router.Use(gin.Logger())
 	router.Use(ginglog.Logger(3 * time.Second))
 	router.Use(gin.Recovery())
+    router.Use(ginoauth2.RequestLogger("uid", "data"))
 
 	public := router.Group("/api")
 	public.GET("/", func(c *gin.Context) {
