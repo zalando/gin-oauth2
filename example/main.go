@@ -8,16 +8,11 @@ import (
 	"github.com/golang/glog"
 	"github.com/zalando-techmonkeys/gin-glog"
 	"github.com/zalando-techmonkeys/gin-oauth2"
-	"golang.org/x/oauth2"
+	"github.com/zalando-techmonkeys/gin-oauth2/zalando"
 )
 
 //var USERS []ginoauth2.AccessTuple = []ginoauth2.AccessTuple{{"employees", "njuettner", "Nick Jüttner"}}
 var USERS []ginoauth2.AccessTuple = []ginoauth2.AccessTuple{{"employees", "sszuecs", "Sandor Szücs"}, {"employees", "njuettner", "Nick Jüttner"}}
-
-var OAuth2Endpoint = oauth2.Endpoint{
-	AuthURL:  "https://token.auth.zalando.com/access_token",
-	TokenURL: "https://auth.zalando.com/z/oauth2/tokeninfo",
-}
 
 func main() {
 
@@ -33,7 +28,7 @@ func main() {
 	})
 
 	private := router.Group("/api/private")
-	private.Use(ginoauth2.Auth(ginoauth2.UidCheck, OAuth2Endpoint, USERS))
+	private.Use(ginoauth2.Auth(ginoauth2.UidCheck, zalando.OAuth2Endpoint, USERS))
 	private.GET("/", func(c *gin.Context) {
 		c.JSON(200, gin.H{"message": "Hello from private"})
 	})

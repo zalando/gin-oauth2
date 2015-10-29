@@ -291,14 +291,10 @@ func RequestLogger(uIdKey string, contentKey string) gin.HandlerFunc {
 		if request.Method != "GET" && err == nil {
 			data, e := c.Get(contentKey)
 			if e == false { //key is non existent
-				if glog.V(2) {
-					glog.Info("ERROR - content not set.")
-				}
+				glog.Info("ERROR - content not set.")
 			} else {
-				if glog.V(2) {
-					id, _ := c.Get(uIdKey)
-					glog.Info(fmt.Sprintf("Request: %+v for %s", data, id))
-				}
+				id, _ := c.Get(uIdKey)
+				glog.Info(fmt.Sprintf("Request: %+v for %s", data, id))
 			}
 		}
 	}
