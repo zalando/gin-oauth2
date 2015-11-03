@@ -298,7 +298,6 @@ func RequestLogger(keys []string, contentKey string) gin.HandlerFunc {
 						values = append(values, val.(string))
 					}
 				}
-				fmt.Println(values)
 				glog.Info(fmt.Sprintf("Request: %+v for %s", data, strings.Join(values, "-")))
 			}
 		}
