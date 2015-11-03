@@ -42,7 +42,7 @@ func main() {
 	flag.Parse()
 	router := gin.New()
 	router.Use(ginglog.Logger(3 * time.Second))
-	router.Use(ginoauth2.RequestLogger("uid", "data"))
+	router.Use(ginoauth2.RequestLogger([]string{"uid", "team"}, "data"))
 	router.Use(gin.Recovery())
 
 	public := router.Group("/api")
