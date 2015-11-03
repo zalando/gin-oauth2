@@ -283,18 +283,23 @@ func Auth(accessCheckFunction func(tc *TokenContainer, access_tuple []AccessTupl
 //      router := gin.Default()
 //      router.Use(ginoauth2.RequestLogger("uid", "data"))
 //
-func RequestLogger(uIdKey string, contentKey string) gin.HandlerFunc {
+func RequestLogger(keys []string, contentKey string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		request := c.Request
 		c.Next()
 		err := c.Errors
 		if request.Method != "GET" && err == nil {
 			data, e := c.Get(contentKey)
-			if e == false { //key is non existent
-				glog.Info("ERROR - content not set.")
-			} else {
-				id, _ := c.Get(uIdKey)
-				glog.Info(fmt.Sprintf("Request: %+v for %s", data, id))
+			if e != false { //key is non existent
+				values := make([]string, 0)
+				for _, key := range keys {
+					val, keyPresent := c.Get(key)
+					if keyPresent {
+						values = append(values, val.(string))
+					}
+				}
+				fmt.Println(values)
+				glog.Info(fmt.Sprintf("Request: %+v for %s", data, strings.Join(values, "-")))
 			}
 		}
 	}

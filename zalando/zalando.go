@@ -65,7 +65,8 @@ func GroupCheck(tc *ginoauth2.TokenContainer, access_tuple []ginoauth2.AccessTup
 		for idx := range access_tuple {
 			at := access_tuple[idx]
 			if teamInfo.Id_name == at.Uid {
-				ctx.Set("uid", fmt.Sprintf("%s - %s", tc.Scopes["uid"].(string), teamInfo.Id_name)) //in this way I can set the authorized uid
+				ctx.Set("uid", tc.Scopes["uid"].(string))
+				ctx.Set("team", teamInfo.Id_name)
 				glog.Infof("Grant access to %s as team member of %s\n", tc.Scopes["uid"].(string), teamInfo.Id_name)
 				return true
 			}
