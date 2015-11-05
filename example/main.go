@@ -8,11 +8,41 @@ import (
 	"github.com/golang/glog"
 	"github.com/zalando-techmonkeys/gin-glog"
 	"github.com/zalando-techmonkeys/gin-oauth2"
-	"github.com/zalando-techmonkeys/gin-oauth2/zalando"
+	"golang.org/x/oauth2"
 )
 
-//var USERS []ginoauth2.AccessTuple = []ginoauth2.AccessTuple{{"employees", "njuettner", "Nick Jüttner"}}
-var USERS []ginoauth2.AccessTuple = []ginoauth2.AccessTuple{{"employees", "sszuecs", "Sandor Szücs"}, {"employees", "njuettner", "Nick Jüttner"}}
+var OAuth2Endpoint = oauth2.Endpoint{
+	AuthURL:  "https://token.auth.zalando.com/access_token",
+	TokenURL: "https://auth.zalando.com/z/oauth2/tokeninfo",
+}
+
+type AccessTuple struct {
+	Realm string // p.e. "employees", "services"
+	Uid   string // UnixName
+	Cn    string // RealName
+}
+
+var USERS []AccessTuple = []AccessTuple{
+	{"employees", "sszuecs", "Sandor Szücs"},
+	{"employees", "njuettner", "Nick Jüttner"},
+}
+
+// Authorization function that checks UID scope
+// TokenContainer must be Valid
+// gin.Context gin contex
+func UidCheck(tc *ginoauth2.TokenContainer, ctx *gin.Context) bool {
+	uid := tc.Scopes["uid"].(string)
+	for idx := range USERS {
+		at := USERS[idx]
+		if uid == at.Uid {
+			ctx.Set("uid", uid) //in this way I can set the authorized uid
+			glog.Infof("Grant access to %s\n", uid)
+			return true
+		}
+	}
+
+	return false
+}
 
 func main() {
 
@@ -28,7 +58,8 @@ func main() {
 	})
 
 	private := router.Group("/api/private")
-	private.Use(ginoauth2.Auth(ginoauth2.UidCheck, zalando.OAuth2Endpoint, USERS))
+	glog.Infof("Register allowed users: %+v", USERS)
+	private.Use(ginoauth2.Auth(UidCheck, OAuth2Endpoint))
 	private.GET("/", func(c *gin.Context) {
 		c.JSON(200, gin.H{"message": "Hello from private"})
 	})
