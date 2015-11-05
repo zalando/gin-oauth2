@@ -281,7 +281,7 @@ func Auth(accessCheckFunction func(tc *TokenContainer, access_tuple []AccessTupl
 //      }
 //      var acl []ginoauth2.AccessTuple = []ginoauth2.AccessTuple{{"employee", 1070, "sszuecs"}, {"employee", 1114, "njuettner"}}
 //      router := gin.Default()
-//      router.Use(ginoauth2.RequestLogger("uid", "data"))
+//      router.Use(ginoauth2.RequestLogger([]string{"uid"}, "data"))
 //
 func RequestLogger(keys []string, contentKey string) gin.HandlerFunc {
 	return func(c *gin.Context) {
