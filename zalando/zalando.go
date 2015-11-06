@@ -55,7 +55,7 @@ type AccessTuple struct {
 	Cn    string // RealName
 }
 
-var access_tuple []AccessTuple
+var Access_tuple []AccessTuple
 
 func GroupCheck(tc *ginoauth2.TokenContainer, ctx *gin.Context) bool {
 	blob, err := RequestTeamInfo(tc, TeamAPI)
@@ -70,8 +70,8 @@ func GroupCheck(tc *ginoauth2.TokenContainer, ctx *gin.Context) bool {
 		return false
 	}
 	for _, teamInfo := range data {
-		for idx := range access_tuple {
-			at := access_tuple[idx]
+		for idx := range Access_tuple {
+			at := Access_tuple[idx]
 			if teamInfo.Id_name == at.Uid {
 				ctx.Set("uid", tc.Scopes["uid"].(string))
 				ctx.Set("team", teamInfo.Id_name)

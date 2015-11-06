@@ -8,6 +8,7 @@ import (
 	"github.com/golang/glog"
 	"github.com/zalando-techmonkeys/gin-glog"
 	"github.com/zalando-techmonkeys/gin-oauth2"
+	"github.com/zalando-techmonkeys/gin-oauth2/zalando"
 	"golang.org/x/oauth2"
 )
 
@@ -45,7 +46,7 @@ func UidCheck(tc *ginoauth2.TokenContainer, ctx *gin.Context) bool {
 }
 
 func main() {
-
+	zalando.Access_tuple = []zalando.AccessTuple{{"teams", "Techmonkeys", "Platform Engineering / System"}}
 	flag.Parse()
 	router := gin.New()
 	router.Use(ginglog.Logger(3 * time.Second))
@@ -58,10 +59,15 @@ func main() {
 	})
 
 	private := router.Group("/api/private")
-	glog.Infof("Register allowed users: %+v", USERS)
-	private.Use(ginoauth2.Auth(UidCheck, OAuth2Endpoint))
+	private_user := router.Group("/api/private_user")
+	glog.Infof("Register allowed users: %+v and groups: %+v", USERS, zalando.Access_tuple)
+	private.Use(ginoauth2.Auth(zalando.GroupCheck, zalando.OAuth2Endpoint))
+	private_user.Use(ginoauth2.Auth(UidCheck, zalando.OAuth2Endpoint))
 	private.GET("/", func(c *gin.Context) {
-		c.JSON(200, gin.H{"message": "Hello from private"})
+		c.JSON(200, gin.H{"message": "Hello from private for groups"})
+	})
+	private_user.GET("/", func(c *gin.Context) {
+		c.JSON(200, gin.H{"message": "Hello from private for users"})
 	})
 
 	glog.Info("bootstrapped application")
