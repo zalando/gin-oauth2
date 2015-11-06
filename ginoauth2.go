@@ -14,10 +14,18 @@
 //     	"golang.org/x/oauth2"
 //     )
 //
-//     var USERS []ginoauth2.AccessTuple = []ginoauth2.AccessTuple{{"employees", "sszuecs", "Sandor Szücs"}, {"employees", "njuettner", "Nick Jüttner"}}
 //     var OAuth2Endpoint = oauth2.Endpoint{
 //     	AuthURL:  "https://token.oauth2.corp.com/access_token",
 //     	TokenURL: "https://oauth2.corp.com/corp/oauth2/tokeninfo",
+//     }
+//
+//     func UidCheck(tc *TokenContainer, ctx *gin.Context) bool {
+//      uid := tc.Scopes["uid"].(string)
+//      if uid != "sszuecs" {
+//       return false
+//      }
+//      ctx.Set("uid", uid)
+//      return true
 //     }
 //
 //     func main() {
@@ -32,7 +40,7 @@
 //     	})
 //
 //     	private := router.Group("/api/private")
-//     	private.Use(ginoauth2.Auth(ginoauth2.UidCheck, OAuth2Endpoint, USERS))
+//     	private.Use(ginoauth2.Auth(UidCheck, OAuth2Endpoint))
 //     	private.GET("/", func(c *gin.Context) {
 //     		c.JSON(200, gin.H{"message": "Hello from private"})
 //     	})
@@ -60,12 +68,6 @@ import (
 var AuthInfoURL string
 var Realms []string = []string{"employees", "services"}
 var Transport http.Transport = http.Transport{}
-
-type AccessTuple struct {
-	Realm string // p.e. "employees", "services"
-	Uid   string // UnixName
-	Cn    string // RealName
-}
 
 type TokenContainer struct {
 	Token     *oauth2.Token
@@ -200,24 +202,6 @@ func (t *TokenContainer) Valid() bool {
 	return t.Token.Valid()
 }
 
-// Authorization function that checks UID scope
-// TokenContainer must be Valid
-// []AccessTuple: [{Realm:employee Uid:sszuecs Cn:Sandor Szücs} {Realm:employee Uid:njuettner Cn:Nick Jüttner}]
-// gin.Context gin contex
-func UidCheck(tc *TokenContainer, access_tuple []AccessTuple, ctx *gin.Context) bool {
-	uid := tc.Scopes["uid"].(string)
-	for idx := range access_tuple {
-		at := access_tuple[idx]
-		if uid == at.Uid {
-			ctx.Set("uid", uid) //in this way I can set the authorized uid
-			glog.Infof("Grant access to %s\n", uid)
-			return true
-		}
-	}
-
-	return false
-}
-
 // Router middleware that can be used to get an authenticated and authorized service for the whole router group.
 // Example:
 //
@@ -228,14 +212,13 @@ func UidCheck(tc *TokenContainer, access_tuple []AccessTuple, ctx *gin.Context) 
 //      var acl []ginoauth2.AccessTuple = []ginoauth2.AccessTuple{{"employee", 1070, "sszuecs"}, {"employee", 1114, "njuettner"}}
 //      router := gin.Default()
 //	private := router.Group("")
-//	private.Use(ginoauth2.Auth(ginoatuh2.UidCheck, ginoauth2.endpoints, acl))
+//	private.Use(ginoauth2.Auth(ginoatuh2.UidCheck, ginoauth2.endpoints))
 //	private.GET("/api/private", func(c *gin.Context) {
 //		c.JSON(200, gin.H{"message": "Hello from private"})
 //	})
 //
-func Auth(accessCheckFunction func(tc *TokenContainer, access_tuple []AccessTuple, ctx *gin.Context) bool, endpoints oauth2.Endpoint, users []AccessTuple) gin.HandlerFunc {
+func Auth(accessCheckFunction func(tc *TokenContainer, ctx *gin.Context) bool, endpoints oauth2.Endpoint) gin.HandlerFunc {
 	// init
-	glog.Infof("Register allowed users: %+v", users)
 	AuthInfoURL = endpoints.TokenURL
 	// middleware
 	return func(ctx *gin.Context) {
@@ -255,7 +238,7 @@ func Auth(accessCheckFunction func(tc *TokenContainer, access_tuple []AccessTupl
 			return
 		}
 
-		if !accessCheckFunction(token_container, users, ctx) {
+		if !accessCheckFunction(token_container, ctx) {
 			ctx.AbortWithError(http.StatusForbidden, errors.New("Access to the Resource is fobidden"))
 			return
 		}
@@ -281,7 +264,7 @@ func Auth(accessCheckFunction func(tc *TokenContainer, access_tuple []AccessTupl
 //      }
 //      var acl []ginoauth2.AccessTuple = []ginoauth2.AccessTuple{{"employee", 1070, "sszuecs"}, {"employee", 1114, "njuettner"}}
 //      router := gin.Default()
-//      router.Use(ginoauth2.RequestLogger("uid", "data"))
+//      router.Use(ginoauth2.RequestLogger([]string{"uid"}, "data"))
 //
 func RequestLogger(keys []string, contentKey string) gin.HandlerFunc {
 	return func(c *gin.Context) {

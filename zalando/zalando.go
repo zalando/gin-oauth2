@@ -49,7 +49,15 @@ func RequestTeamInfo(tc *ginoauth2.TokenContainer, uri string) ([]byte, error) {
 	return ioutil.ReadAll(resp.Body)
 }
 
-func GroupCheck(tc *ginoauth2.TokenContainer, access_tuple []ginoauth2.AccessTuple, ctx *gin.Context) bool {
+type AccessTuple struct {
+	Realm string // p.e. "employees", "services"
+	Uid   string // UnixName
+	Cn    string // RealName
+}
+
+var access_tuple []AccessTuple
+
+func GroupCheck(tc *ginoauth2.TokenContainer, ctx *gin.Context) bool {
 	blob, err := RequestTeamInfo(tc, TeamAPI)
 	if err != nil {
 		glog.Error("failed to get team info, caused by: ", err)
