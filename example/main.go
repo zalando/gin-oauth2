@@ -28,25 +28,8 @@ var USERS []AccessTuple = []AccessTuple{
 	{"employees", "njuettner", "Nick Jüttner"},
 }
 
-// Authorization function that checks UID scope
-// TokenContainer must be Valid
-// gin.Context gin contex
-func UidCheck(tc *ginoauth2.TokenContainer, ctx *gin.Context) bool {
-	uid := tc.Scopes["uid"].(string)
-	for idx := range USERS {
-		at := USERS[idx]
-		if uid == at.Uid {
-			ctx.Set("uid", uid) //in this way I can set the authorized uid
-			glog.Infof("Grant access to %s\n", uid)
-			return true
-		}
-	}
-
-	return false
-}
-
 func main() {
-	zalando.Access_tuple = []zalando.AccessTuple{{"teams", "Techmonkeys", "Platform Engineering / System"}}
+	zalando.AccessTuples = []zalando.AccessTuple{{"teams", "Techmonkeys", "Platform Engineering / System"}}
 	flag.Parse()
 	router := gin.New()
 	router.Use(ginglog.Logger(3 * time.Second))
@@ -59,14 +42,14 @@ func main() {
 	})
 
 	private := router.Group("/api/private")
-	private_user := router.Group("/api/private_user")
-	glog.Infof("Register allowed users: %+v and groups: %+v", USERS, zalando.Access_tuple)
+	privateUser := router.Group("/api/privateUser")
+	glog.Infof("Register allowed users: %+v and groups: %+v", USERS, zalando.AccessTuples)
 	private.Use(ginoauth2.Auth(zalando.GroupCheck, zalando.OAuth2Endpoint))
-	private_user.Use(ginoauth2.Auth(UidCheck, zalando.OAuth2Endpoint))
+	privateUser.Use(ginoauth2.Auth(zalando.UidCheck, zalando.OAuth2Endpoint))
 	private.GET("/", func(c *gin.Context) {
 		c.JSON(200, gin.H{"message": "Hello from private for groups"})
 	})
-	private_user.GET("/", func(c *gin.Context) {
+	privateUser.GET("/", func(c *gin.Context) {
 		c.JSON(200, gin.H{"message": "Hello from private for users"})
 	})
 
