@@ -55,7 +55,7 @@ type AccessTuple struct {
 	Cn    string // RealName
 }
 
-var Access_tuple []AccessTuple
+var AccessTuples []AccessTuple
 
 func GroupCheck(tc *ginoauth2.TokenContainer, ctx *gin.Context) bool {
 	blob, err := RequestTeamInfo(tc, TeamAPI)
@@ -70,14 +70,31 @@ func GroupCheck(tc *ginoauth2.TokenContainer, ctx *gin.Context) bool {
 		return false
 	}
 	for _, teamInfo := range data {
-		for idx := range Access_tuple {
-			at := Access_tuple[idx]
+		for idx := range AccessTuples {
+			at := AccessTuples[idx]
 			if teamInfo.Id_name == at.Uid {
 				ctx.Set("uid", tc.Scopes["uid"].(string))
 				ctx.Set("team", teamInfo.Id_name)
 				glog.Infof("Grant access to %s as team member of %s\n", tc.Scopes["uid"].(string), teamInfo.Id_name)
 				return true
 			}
+		}
+	}
+
+	return false
+}
+
+// Authorization function that checks UID scope
+// TokenContainer must be Valid
+// gin.Context gin contex
+func UidCheck(tc *ginoauth2.TokenContainer, ctx *gin.Context) bool {
+	uid := tc.Scopes["uid"].(string)
+	for idx := range AccessTuples {
+		at := AccessTuples[idx]
+		if uid == at.Uid {
+			ctx.Set("uid", uid) //in this way I can set the authorized uid
+			glog.Infof("Grant access to %s\n", uid)
+			return true
 		}
 	}
 
