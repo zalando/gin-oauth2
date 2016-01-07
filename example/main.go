@@ -29,7 +29,7 @@ var USERS []AccessTuple = []AccessTuple{
 }
 
 func main() {
-	zalando.AccessTuples = []zalando.AccessTuple{{"teams", "Techmonkeys", "Platform Engineering / System"}}
+	zalando.AccessTuples = []zalando.AccessTuple{{"teams", "tm", "Platform Engineering / System"}}
 	flag.Parse()
 	router := gin.New()
 	router.Use(ginglog.Logger(3 * time.Second))
