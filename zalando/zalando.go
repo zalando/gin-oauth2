@@ -101,7 +101,7 @@ func UidCheck(tc *ginoauth2.TokenContainer, ctx *gin.Context) bool {
 	return false
 }
 
-//NoAuthorization sets "team" and "uid" in teh context without checking if the user/team is authorized
+//NoAuthorization sets "team" and "uid" in the context without checking if the user/team is authorized
 func NoAuthorization(tc *ginoauth2.TokenContainer, ctx *gin.Context) bool {
 	blob, err := RequestTeamInfo(tc, TeamAPI)
 	var data []TeamInfo
