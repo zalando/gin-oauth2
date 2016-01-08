@@ -13,13 +13,6 @@ import (
 	"golang.org/x/oauth2"
 )
 
-var OAuth2Endpoint = oauth2.Endpoint{
-	AuthURL:  "https://token.auth.zalando.com/access_token",
-	TokenURL: "https://auth.zalando.com/z/oauth2/tokeninfo",
-}
-
-var TeamAPI string = "https://teams.auth.zalando.com/api/teams"
-
 type TeamInfo struct {
 	Id      string
 	Id_name string
@@ -28,6 +21,21 @@ type TeamInfo struct {
 	Name    string
 	Mail    []string
 }
+
+type AccessTuple struct {
+	Realm string // p.e. "employees", "services"
+	Uid   string // UnixName
+	Cn    string // RealName
+}
+
+var OAuth2Endpoint = oauth2.Endpoint{
+	AuthURL:  "https://token.auth.zalando.com/access_token",
+	TokenURL: "https://auth.zalando.com/z/oauth2/tokeninfo",
+}
+
+var TeamAPI string = "https://teams.auth.zalando.com/api/teams"
+
+var AccessTuples []AccessTuple
 
 func RequestTeamInfo(tc *ginoauth2.TokenContainer, uri string) ([]byte, error) {
 	var uv = make(url.Values)
@@ -49,14 +57,6 @@ func RequestTeamInfo(tc *ginoauth2.TokenContainer, uri string) ([]byte, error) {
 	return ioutil.ReadAll(resp.Body)
 }
 
-type AccessTuple struct {
-	Realm string // p.e. "employees", "services"
-	Uid   string // UnixName
-	Cn    string // RealName
-}
-
-var AccessTuples []AccessTuple
-
 func GroupCheck(tc *ginoauth2.TokenContainer, ctx *gin.Context) bool {
 	blob, err := RequestTeamInfo(tc, TeamAPI)
 	if err != nil {
@@ -72,10 +72,10 @@ func GroupCheck(tc *ginoauth2.TokenContainer, ctx *gin.Context) bool {
 	for _, teamInfo := range data {
 		for idx := range AccessTuples {
 			at := AccessTuples[idx]
-			if teamInfo.Id_name == at.Uid {
+			if teamInfo.Id == at.Uid {
 				ctx.Set("uid", tc.Scopes["uid"].(string))
-				ctx.Set("team", teamInfo.Id_name)
-				glog.Infof("Grant access to %s as team member of %s\n", tc.Scopes["uid"].(string), teamInfo.Id_name)
+				ctx.Set("team", teamInfo.Id)
+				glog.Infof("Grant access to %s as team member of \"%s\"\n", tc.Scopes["uid"].(string), teamInfo.Id)
 				return true
 			}
 		}
@@ -99,4 +99,19 @@ func UidCheck(tc *ginoauth2.TokenContainer, ctx *gin.Context) bool {
 	}
 
 	return false
+}
+
+//NoAuthorization sets "team" and "uid" in the context without checking if the user/team is authorized
+func NoAuthorization(tc *ginoauth2.TokenContainer, ctx *gin.Context) bool {
+	blob, err := RequestTeamInfo(tc, TeamAPI)
+	var data []TeamInfo
+	err = json.Unmarshal(blob, &data)
+	if err != nil {
+		glog.Errorf("JSON.Unmarshal failed, caused by: %s", err)
+	}
+	for _, teamInfo := range data {
+		ctx.Set("uid", tc.Scopes["uid"].(string))
+		ctx.Set("team", teamInfo.Id)
+	}
+	return true
 }
