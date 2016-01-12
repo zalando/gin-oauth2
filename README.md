@@ -1,5 +1,7 @@
 # ginoauth2
 
+[![Go Report Card](http://goreportcard.com/badge/zalando-techmonkeys/gin-oauth2)](http://goreportcard.com/report/zalando-techmonkeys/gin-oauth2)
+
 This projects implements an OAuth2 middleware ready to use with [Gin Framework](https://github.com/gin-gonic/gin).
 
 ## Installation
