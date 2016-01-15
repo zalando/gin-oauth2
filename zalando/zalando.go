@@ -115,6 +115,7 @@ func NoAuthorization(tc *ginoauth2.TokenContainer, ctx *gin.Context) bool {
 		if teamInfo.Type == "official" {
 			ctx.Set("uid", tc.Scopes["uid"].(string))
 			ctx.Set("team", teamInfo.Id)
+			return true
 		}
 	}
 	return true
