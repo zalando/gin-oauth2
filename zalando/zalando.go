@@ -69,19 +69,21 @@ func GroupCheck(tc *ginoauth2.TokenContainer, ctx *gin.Context) bool {
 		glog.Errorf("JSON.Unmarshal failed, caused by: %s", err)
 		return false
 	}
+	granted := false
 	for _, teamInfo := range data {
 		for idx := range AccessTuples {
 			at := AccessTuples[idx]
 			if teamInfo.Id == at.Uid {
+				granted = true
+				glog.Infof("Grant access to %s as team member of \"%s\"\n", tc.Scopes["uid"].(string), teamInfo.Id)
+			}
+			if teamInfo.Type == "official" {
 				ctx.Set("uid", tc.Scopes["uid"].(string))
 				ctx.Set("team", teamInfo.Id)
-				glog.Infof("Grant access to %s as team member of \"%s\"\n", tc.Scopes["uid"].(string), teamInfo.Id)
-				return true
 			}
 		}
 	}
-
-	return false
+	return granted
 }
 
 // Authorization function that checks UID scope
@@ -110,8 +112,11 @@ func NoAuthorization(tc *ginoauth2.TokenContainer, ctx *gin.Context) bool {
 		glog.Errorf("JSON.Unmarshal failed, caused by: %s", err)
 	}
 	for _, teamInfo := range data {
-		ctx.Set("uid", tc.Scopes["uid"].(string))
-		ctx.Set("team", teamInfo.Id)
+		if teamInfo.Type == "official" {
+			ctx.Set("uid", tc.Scopes["uid"].(string))
+			ctx.Set("team", teamInfo.Id)
+			return true
+		}
 	}
 	return true
 }
