@@ -1,4 +1,4 @@
-# ginoauth2
+# Gin-OAuth2
 
 [![Go Report Card](http://goreportcard.com/badge/zalando-techmonkeys/gin-oauth2)](http://goreportcard.com/report/zalando-techmonkeys/gin-oauth2)
 
