@@ -30,7 +30,7 @@ type AccessTuple struct {
 
 var OAuth2Endpoint = oauth2.Endpoint{
 	AuthURL:  "https://token.auth.zalando.com/access_token",
-	TokenURL: "https://auth.zalando.com/z/oauth2/tokeninfo",
+	TokenURL: "https://info.services.auth.zalando.com/oauth2/tokeninfo",
 }
 
 var TeamAPI string = "https://teams.auth.zalando.com/api/teams"
