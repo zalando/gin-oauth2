@@ -1,3 +1,4 @@
+// Zalando specific example.
 package main
 
 import (
@@ -9,13 +10,7 @@ import (
 	"github.com/zalando-techmonkeys/gin-glog"
 	"github.com/zalando-techmonkeys/gin-oauth2"
 	"github.com/zalando-techmonkeys/gin-oauth2/zalando"
-	"golang.org/x/oauth2"
 )
-
-var OAuth2Endpoint = oauth2.Endpoint{
-	AuthURL:  "https://token.auth.zalando.com/access_token",
-	TokenURL: "https://auth.zalando.com/z/oauth2/tokeninfo",
-}
 
 type AccessTuple struct {
 	Realm string // p.e. "employees", "services"
