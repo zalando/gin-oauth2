@@ -2,13 +2,28 @@
 
 [![Go Report Card](http://goreportcard.com/badge/zalando-techmonkeys/gin-oauth2)](http://goreportcard.com/report/zalando-techmonkeys/gin-oauth2)
 
-This project implements an OAuth2 middleware ready to use with the
-[Gin Framework](https://github.com/gin-gonic/gin). It makes
-authorization simple to define and flexible to use.
+Gin-OAuth2 is specially made for [Gin Framework](https://github.com/gin-gonic/gin) users who also want to use OAuth2. It was created by Golang developers who needed Gin middleware for working with OAuth 2 and couldn't find any.  
+
+##Project Context and Features
+When it comes to choosing a Go framework, there's a lot of confusion about what to use. The scene is very fragmented, and detailed comparisons of different frameworks are still somewhat rare. Meantime, how to handle dependencies and structure projects are big topics in the Golang community. We've liked using Gin for its speed, accessibility, and usefulness in developing microservice architectures. In creating Gin-OAuth2, we wanted to take fuller advantage of Gin's capabilities and help other devs do likewise. 
+
+Gin-OAuth2 is expressive, flexible, and very easy to use. It allows you to:
+- do OAuth 2 authorization based on HTTP routing
+- create router groups to place OAuth 2 authorization on top, using HTTP verbs and passing them. 
+- more easily decouple services by promoting a "say what to do, not how to do it" approach 
+- configure your REST API directly in the code (see the "Usage" example below)
+- write your own authorization functions
+
+##How OAuth 2 Works
+If you're just starting out with OAuth 2, you might find these resources useful:
+- [OAuth 2 Simplified](https://www.digitalocean.com/community/tutorials/an-introduction-to-oauth-2)
+- [An Introduction to OAuth 2](https://www.digitalocean.com/community/tutorials/an-introduction-to-oauth-2)
 
 ## Requirements
 
-You need an OAuth2 Token provider and a Tokeninfo service.
+- Gin
+- An OAuth2 Token provider (we recommend that you write your own)
+- a Tokeninfo service
 
 Gin-OAuth2 uses the following [Go](https://golang.org/) packages as dependencies:
 
@@ -17,20 +32,17 @@ Gin-OAuth2 uses the following [Go](https://golang.org/) packages as dependencies
 * github.com/zalando-techmonkeys/gin-glog
 
 ## Installation
+Assuming you've installed Go and Gin, run this:
 
     go get github.com/zalando-techmonkeys/gin-oauth2
 
 ## Usage
 
-This shows a full
-[Example](https://github.com/zalando-techmonkeys/gin-oauth2/blob/master/example/main.go)
-how to use this middleware.
+[This example](https://github.com/zalando-techmonkeys/gin-oauth2/blob/master/example/main.go) shows you how to use Gin-OAuth2.
 
-### Uid based access
+### Uid-Based Access
 
-You have to define your access triples that define who has access to a
-resource. In this snippet we have two employees that can be granted
-access to resources.
+First, define your access triples to identify who has access to a given resource. This snippet shows how to grant resource access to two hypothetical employees:
 
         type AccessTuple struct {
 	     Realm string // p.e. "employees", "services"
@@ -42,16 +54,14 @@ access to resources.
             {"employees", "njuettner", "Nick Jüttner"},
         }
 
-Next you have to define which Gin middlewares you use:
+Next, define which Gin middlewares you use. The third line in this snippet is a basic audit log:
 
 	router := gin.New()
 	router.Use(ginglog.Logger(3 * time.Second))
 	router.Use(ginoauth2.RequestLogger([]string{"uid"}, "data"))
 	router.Use(gin.Recovery())
 
-At last you define which access you grant to the defined users.
-We use a router group, such that we can add a bunch of router paths
-and HTTP verbs.
+Finally, define which type of access you grant to the defined users. We'll use a router group, so that we can add a bunch of router paths and HTTP verbs:
 
 	privateUser := router.Group("/api/privateUser")
 	privateUser.Use(ginoauth2.Auth(zalando.UidCheck, zalando.OAuth2Endpoint))
@@ -59,31 +69,28 @@ and HTTP verbs.
 		c.JSON(200, gin.H{"message": "Hello from private for users"})
 	})
 
-To test, you can use curl.
+####Testing
+To test, you can use curl:
 
         curl -H "Authorization: Bearer $TOKEN" http://localhost:8081/api/privateUser/
         {"message":"Hello from private for users}
 
-### Team based access
+### Team-based access
 
-You have to define your access triples that define who has access to a
-resource. In this snippet we have one team that can be granted
-access to resources.
+As for Uid-Based Access, define your access triples to identify who has access to a given resource. In this snippet, we can grant resource access to an entire team instead of individuals:
 
 	zalando.AccessTuples = []zalando.AccessTuple{
             {"teams", "tm", "Platform Engineering / System"},
         }
 
-Next you have to define which Gin middlewares you use:
+Now define which Gin middlewares you use:
 
 	router := gin.New()
 	router.Use(ginglog.Logger(3 * time.Second))
 	router.Use(ginoauth2.RequestLogger([]string{"uid"}, "data"))
 	router.Use(gin.Recovery())
 
-At last you define which access you grant to the defined team.
-We use a router group, such that we can add a bunch of router paths
-and HTTP verbs.
+Lastly, define which type of access you grant to the defined team. We'll use a router group again:
 
 	private := router.Group("/api/private")
 	private.Use(ginoauth2.Auth(zalando.GroupCheck, zalando.OAuth2Endpoint))
@@ -91,13 +98,12 @@ and HTTP verbs.
 		c.JSON(200, gin.H{"message": "Hello from private for groups"})
 	})
 
-To test you can use curl.
+Once again, you can use curl to test:
 
         curl -H "Authorization: Bearer $TOKEN" http://localhost:8081/api/private/
         {"message":"Hello from private for groups"}
 
-
-### Run example service
+### Run Example Service
 
 Run example service:
 
@@ -121,6 +127,11 @@ Request:
 
     % curl --request GET --header "Authorization: Bearer $TOKEN" http://localhost:8081/api/private
     {"message":"Hello from private for groups""}
+     
+##Contributing/TODO
+We welcome contributions from the community; just submit a pull request. To help you get started, here are some items that we'd love help with:
+- Adding automated tests, possibly with [dex](https://github.com/coreos/dex) to include Travis CI in the setup
+- Add integration with other open-source token providers into the code base
 
 ## License
 
