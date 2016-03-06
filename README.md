@@ -26,24 +26,29 @@ Gin-OAuth2 is expressive, flexible, and very easy to use. It allows you to:
 - write your own authorization functions
 
 ## How OAuth 2 Works
-If you're just starting out with OAuth2, you might find these resources useful:
+
+If you're just starting out with OAuth2, you might find these
+resources useful:
+
 - [OAuth 2 Simplified](https://www.digitalocean.com/community/tutorials/an-introduction-to-oauth-2)
 - [An Introduction to OAuth 2](https://www.digitalocean.com/community/tutorials/an-introduction-to-oauth-2)
 
 ## Requirements
 
-- Gin
+- [Gin](https://github.com/gin-gonic/gin)
 - An OAuth2 Token provider (we recommend that you use your own,
   p.e. use [dex](https://github.com/coreos/dex))
 - a Tokeninfo service (p.e. use [dex](https://github.com/coreos/dex))
 
-Gin-OAuth2 uses the following [Go](https://golang.org/) packages as dependencies:
+Gin-OAuth2 uses the following [Go](https://golang.org/) packages as
+dependencies:
 
 * github.com/gin-gonic/gin
 * github.com/golang/glog
 * github.com/zalando-techmonkeys/gin-glog
 
 ## Installation
+
 Assuming you've installed Go and Gin, run this:
 
     go get github.com/zalando-techmonkeys/gin-oauth2
@@ -159,6 +164,12 @@ help with:
   [dex](https://github.com/coreos/dex) to include Travis CI in the
   setup Add integration with other open-source token providers into
 - the code base
+
+## Contributors
+
+Thanks to:
+
+- Olivier Mengué
 
 ## License
 
