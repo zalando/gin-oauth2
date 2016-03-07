@@ -3,7 +3,7 @@
 [![Go Report Card](http://goreportcard.com/badge/zalando-techmonkeys/gin-oauth2)](http://goreportcard.com/report/zalando-techmonkeys/gin-oauth2)
 
 Gin-OAuth2 is specially made for [Gin Framework](https://github.com/gin-gonic/gin)
-users who also want to use OAuth2. It was created by Golang developers
+users who also want to use OAuth2. It was created by Go developers
 who needed Gin middleware for working with OAuth2 and couldn't find
 any.
 
@@ -13,7 +13,7 @@ When it comes to choosing a Go framework, there's a lot of confusion
 about what to use. The scene is very fragmented, and detailed
 comparisons of different frameworks are still somewhat rare. Meantime,
 how to handle dependencies and structure projects are big topics in
-the Golang community. We've liked using Gin for its speed,
+the Go community. We've liked using Gin for its speed,
 accessibility, and usefulness in developing microservice
 architectures. In creating Gin-OAuth2, we wanted to take fuller
 advantage of Gin's capabilities and help other devs do likewise.
@@ -163,7 +163,17 @@ help with:
 - Adding automated tests, possibly with
   [dex](https://github.com/coreos/dex) to include Travis CI in the
   setup Add integration with other open-source token providers into
+- Adding other OAuth2 providers like google, github, .. would be a
+  very nice contribution
 - the code base
+
+Please use github issues as starting point for contributions, new
+ideas or bugreports.
+
+## Contact
+
+* E-Mail: team-techmonkeys@zalando.de
+* IRC on freenode: #zalando-techmonkeys
 
 ## Contributors
 
