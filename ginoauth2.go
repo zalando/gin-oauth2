@@ -94,9 +94,9 @@ func RequestAuthInfo(t *oauth2.Token) ([]byte, error) {
 	var uv = make(url.Values)
 	// uv.Set("realm", o.Realm)
 	uv.Set("access_token", t.AccessToken)
-	info_url := AuthInfoURL + "?" + uv.Encode()
+	infoURL := AuthInfoURL + "?" + uv.Encode()
 	client := &http.Client{Transport: &Transport}
-	req, err := http.NewRequest("GET", info_url, nil)
+	req, err := http.NewRequest("GET", infoURL, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -170,20 +170,20 @@ func GetTokenContainer(token *oauth2.Token) (*TokenContainer, error) {
 }
 
 func getTokenContainer(ctx *gin.Context) (*TokenContainer, bool) {
-	var oauth_token *oauth2.Token
+	var oauthToken *oauth2.Token
 	var tc *TokenContainer
 	var err error
 
-	if oauth_token, err = extractToken(ctx.Request); err != nil {
+	if oauthToken, err = extractToken(ctx.Request); err != nil {
 		glog.Errorf("Can not extract oauth2.Token, caused by: %s", err)
 		return nil, false
 	}
-	if !oauth_token.Valid() {
+	if !oauthToken.Valid() {
 		glog.Infof("Invalid Token - nil or expired")
 		return nil, false
 	}
 
-	if tc, err = GetTokenContainer(oauth_token); err != nil {
+	if tc, err = GetTokenContainer(oauthToken); err != nil {
 		glog.Errorf("Can not extract TokenContainer, caused by: %s", err)
 		return nil, false
 	}
@@ -222,8 +222,8 @@ func Auth(accessCheckFunction func(tc *TokenContainer, ctx *gin.Context) bool, e
 	AuthInfoURL = endpoints.TokenURL
 	// middleware
 	return func(ctx *gin.Context) {
-		var token_container *TokenContainer
-		token_container, ok := getTokenContainer(ctx)
+		var tokenContainer *TokenContainer
+		tokenContainer, ok := getTokenContainer(ctx)
 		if !ok {
 			// set LOCATION header to auth endpoint such that the user can easily get a new access-token
 			ctx.Writer.Header().Set("Location", endpoints.AuthURL)
@@ -231,20 +231,20 @@ func Auth(accessCheckFunction func(tc *TokenContainer, ctx *gin.Context) bool, e
 			return
 		}
 
-		if !token_container.Valid() {
+		if !tokenContainer.Valid() {
 			// set LOCATION header to auth endpoint such that the user can easily get a new access-token
 			ctx.Writer.Header().Set("Location", endpoints.AuthURL)
 			ctx.AbortWithError(http.StatusUnauthorized, errors.New("Invalid Token"))
 			return
 		}
 
-		if !accessCheckFunction(token_container, ctx) {
+		if !accessCheckFunction(tokenContainer, ctx) {
 			ctx.AbortWithError(http.StatusForbidden, errors.New("Access to the Resource is fobidden"))
 			return
 		}
 
 		// access allowed
-		ctx.Writer.Header().Set("Bearer", token_container.Token.AccessToken)
+		ctx.Writer.Header().Set("Bearer", tokenContainer.Token.AccessToken)
 	}
 }
 
