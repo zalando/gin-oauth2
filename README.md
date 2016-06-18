@@ -174,6 +174,7 @@ ideas or bugreports.
 
 * E-Mail: team-techmonkeys@zalando.de
 * IRC on freenode: #zalando-techmonkeys
+* Security issues: Please send an E-Mail to [maintainers](MAINTAINERS) and consider to get an answer after at least 2 workdays, if not send an e-mail to team-techmonkeys@zalando.de.
 
 ## Contributors
 
