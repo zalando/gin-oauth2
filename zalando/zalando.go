@@ -41,6 +41,7 @@ var OAuth2Endpoint = oauth2.Endpoint{
 	TokenURL: "https://info.services.auth.zalando.com/oauth2/tokeninfo",
 }
 
+// TeamAPI is a custom API
 var TeamAPI string = "https://teams.auth.zalando.com/api/teams"
 
 // RequestTeamInfo is a function that returns team information for a
