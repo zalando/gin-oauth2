@@ -154,6 +154,71 @@ Request:
     % curl --request GET --header "Authorization: Bearer $TOKEN" http://localhost:8081/api/private
     {"message":"Hello from private for groups""}
 
+### Google-based access
+
+As shown in a good
+[article](http://skarlso.github.io/2016/06/12/google-signin-with-go/),
+about Gin and Google signin you have to create credentials for an
+"OAuth client ID". In your [Google Cloud
+Console](https://console.cloud.google.com) you will find "Credentials"
+in the "API Manager".
+![Picture of Google Cloud Console showing API Manager](https://github.com/zalando-techmonkeys/gin-oauth2/tree/master/doc/gcp-credentials.png)
+
+You have to specify your chosen credentials, scopes for Authorization,
+ redirect URL to get redirected to after the Google OAuth2 was
+done, a secret for the CookieStore and a session name to be used in
+ [Sessions as identifier](https://github.com/gin-gonic/contrib/sessions).
+
+
+        redirectURL := "http://127.0.0.1:8081/auth/"
+        credFile := "./example/test-clientid.google.json" // you have to build your own
+	scopes := []string{
+		"https://www.googleapis.com/auth/userinfo.email",
+		// You have to select your own scope from here -> https://developers.google.com/identity/protocols/googlescopes#google_sign-in
+	}
+	secret := []byte("secret") //
+	sessionName := "goquestsession"
+
+	router := gin.Default()
+	// init settings for google auth
+	google.Setup(redirectURL, credFile, scopes, secret)
+	router.Use(google.Session(sessionName))
+
+
+After the base setup we register a login handler which you may want to
+implement yourself (Pull Request is welcome).
+
+	router.GET("/login", google.LoginHandler)
+
+After having a public accessible login resource we protect a private
+router group, which you can only access with a Google authorized
+session. Auth will save user information into the Gin context bucket "user".
+
+	// protected url group
+	private := router.Group("/auth")
+	private.Use(google.Auth())
+	private.GET("/", UserInfoHandler)
+	private.GET("/api", func(ctx *gin.Context) {
+		ctx.JSON(200, gin.H{"message": "Hello from private for groups"})
+	})
+
+	router.Run("127.0.0.1:8081")
+
+A handler fetch user information from Gin context that are stored from
+google.Auth.
+
+        func UserInfoHandler(ctx *gin.Context) {
+	        ctx.JSON(http.StatusOK, gin.H{"Hello": "from private", "user": ctx.MustGet("user").(google.User)})
+        }
+
+#### Testing Google Auth
+
+- You created your Google clientid stored in example/test-clientid.google.json.hide similar to and grant redirect to example/test-clientid.google.json as described in the [article](http://skarlso.github.io/2016/06/12/google-signin-with-go/) mentioned before.
+- run server: ```% go run example/google.go -cred-file example/test-clientid.google.json.hide```
+- open [http://127.0.0.1:8081/login](http://127.0.0.1:8081/login) in your Browser
+- In your browser follow the login, choose your identity to login with.
+- At last step you would be redirected to the http://127.0.0.1:8081/auth endpoint that should show your identity data.
+
 ## Contributing/TODO
 
 We welcome contributions from the community; just submit a pull
@@ -163,6 +228,7 @@ help with:
 - Adding automated tests, possibly with
   [dex](https://github.com/coreos/dex) to include Travis CI in the
   setup Add integration with other open-source token providers into
+- Refactoring and rebuilding a customizable Google LoginHandler
 - Adding other OAuth2 providers like google, github, .. would be a
   very nice contribution
 - the code base
