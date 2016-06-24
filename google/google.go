@@ -10,7 +10,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"os"
 
 	"github.com/gin-gonic/contrib/sessions"
 	"github.com/gin-gonic/gin"
@@ -26,7 +25,7 @@ type Credentials struct {
 	ClientSecret string `json:"secret"`
 }
 
-// User is a retrieved and authentiacted user.
+// User is a retrieved and authenticated user.
 type User struct {
 	Sub           string `json:"sub"`
 	Name          string `json:"name"`
@@ -57,8 +56,7 @@ func Setup(redirectURL, credFile string, scopes []string, secret []byte) {
 	var c Credentials
 	file, err := ioutil.ReadFile(credFile)
 	if err != nil {
-		fmt.Printf("File error: %v\n", err)
-		os.Exit(1)
+		glog.Fatalf("File error: %v\n", err)
 	}
 	json.Unmarshal(file, &c)
 
@@ -87,7 +85,7 @@ func GetLoginURL(state string) string {
 	return conf.AuthCodeURL(state)
 }
 
-// Auth is the google authorziation middleware. You can use them to protect a routergroup.
+// Auth is the google authorization middleware. You can use them to protect a routergroup.
 // Example:
 //
 //        private.Use(google.Auth())
