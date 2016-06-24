@@ -162,7 +162,7 @@ about Gin and Google signin you have to create credentials for an
 "OAuth client ID". In your [Google Cloud
 Console](https://console.cloud.google.com) you will find "Credentials"
 in the "API Manager".
-![Picture of Google Cloud Console showing API Manager](https://github.com/zalando-techmonkeys/gin-oauth2/tree/master/doc/gcp-credentials.png)
+![Picture of Google Cloud Console showing API Manager](https://github.com/zalando-techmonkeys/gin-oauth2/blob/feature/google-oauth/doc/gcp-credentials.png?raw=true)
 
 You have to specify your chosen credentials, scopes for Authorization,
  redirect URL to get redirected to after the Google OAuth2 was
