@@ -98,10 +98,10 @@ To test, you can use curl:
         curl -H "Authorization: Bearer $TOKEN" http://localhost:8081/api/privateUser/
         {"message":"Hello from private for users}
 
-### Team-based access
+### Team-Based Access
 
-As for Uid-Based Access, define your access triples to identify who
-has access to a given resource. In this snippet, we can grant resource
+As with Uid-Based Access, define your access triples to identify who
+has access to a given resource. With this snippet, you can grant resource
 access to an entire team instead of individuals:
 
 	zalando.AccessTuples = []zalando.AccessTuple{
@@ -154,20 +154,13 @@ Request:
     % curl --request GET --header "Authorization: Bearer $TOKEN" http://localhost:8081/api/private
     {"message":"Hello from private for groups""}
 
-### Google-based access
+### Google-Based Access
 
-As shown in a good
-[article](http://skarlso.github.io/2016/06/12/google-signin-with-go/),
-about Gin and Google signin you have to create credentials for an
-"OAuth client ID". In your [Google Cloud
-Console](https://console.cloud.google.com) you will find "Credentials"
-in the "API Manager".
+As shown in [this great article](http://skarlso.github.io/2016/06/12/google-signin-with-go/) about Gin and Google signin, you have to create credentials for an "OAuth client ID." In your [Google Cloud Console](https://console.cloud.google.com), you will find "Credentials" in the "API Manager":
+
 ![Picture of Google Cloud Console showing API Manager](https://github.com/zalando-techmonkeys/gin-oauth2/blob/feature/google-oauth/doc/gcp-credentials.png?raw=true)
 
-You have to specify your chosen credentials, scopes for Authorization,
- redirect URL to get redirected to after the Google OAuth2 was
-done, a secret for the CookieStore and a session name to be used in
- [Sessions as identifier](https://github.com/gin-gonic/contrib/sessions).
+Specify your chosen credentials and scopes for authorization, and redirect the URL to get redirected to after the Google OAuth2 was done, a secret for the CookieStore and a session name to be used in [Sessions as identifier](https://github.com/gin-gonic/contrib/sessions).
 
 
         redirectURL := "http://127.0.0.1:8081/auth/"
@@ -185,14 +178,11 @@ done, a secret for the CookieStore and a session name to be used in
 	router.Use(google.Session(sessionName))
 
 
-After the base setup we register a login handler which you may want to
-implement yourself (Pull Request is welcome).
+After the base setup, register a login handler. You might want to implement it yourself (pull requests are welcome):
 
 	router.GET("/login", google.LoginHandler)
 
-After having a public accessible login resource we protect a private
-router group, which you can only access with a Google authorized
-session. Auth will save user information into the Gin context bucket "user".
+With a publicly accessible login resource in place, we can protect a private router group accessibly only with a Google authorized session. Auth will save your user information in the Gin context bucket "user."
 
 	// protected url group
 	private := router.Group("/auth")
@@ -204,8 +194,7 @@ session. Auth will save user information into the Gin context bucket "user".
 
 	router.Run("127.0.0.1:8081")
 
-A handler fetch user information from Gin context that are stored from
-google.Auth.
+A handler will fetch user information from the gin.Context that's stored in google.Auth.
 
         func UserInfoHandler(ctx *gin.Context) {
 	        ctx.JSON(http.StatusOK, gin.H{"Hello": "from private", "user": ctx.MustGet("user").(google.User)})
@@ -213,34 +202,31 @@ google.Auth.
 
 #### Testing Google Auth
 
-- You created your Google clientid stored in example/test-clientid.google.json.hide similar to and grant redirect to example/test-clientid.google.json as described in the [article](http://skarlso.github.io/2016/06/12/google-signin-with-go/) mentioned before.
-- run server: ```% go run example/google.go -cred-file example/test-clientid.google.json.hide```
-- open [http://127.0.0.1:8081/login](http://127.0.0.1:8081/login) in your Browser
-- In your browser follow the login, choose your identity to login with.
-- At last step you would be redirected to the http://127.0.0.1:8081/auth endpoint that should show your identity data.
+- Created your Google clientid stored in example/test-clientid.google.json.hide similar to and grant redirect to example/test-clientid.google.json as described in the [article](http://skarlso.github.io/2016/06/12/google-signin-with-go/) mentioned before.
+- run the server: ```% go run example/google.go -cred-file example/test-clientid.google.json.hide```
+- open [http://127.0.0.1:8081/login](http://127.0.0.1:8081/login) in your browser
+- In your browser, follow the login, and choose your identity to login with
+- You'll be redirected to the http://127.0.0.1:8081/auth endpoint, which should show your identity data
 
 ## Contributing/TODO
 
-We welcome contributions from the community; just submit a pull
-request. To help you get started, here are some items that we'd love
-help with:
+We welcome contributions from the community; just submit a pull request. To help you get started, here are some items that we'd love help with:
 
 - Adding automated tests, possibly with
   [dex](https://github.com/coreos/dex) to include Travis CI in the
-  setup Add integration with other open-source token providers into
+  setup 
+- Adding integration with other open-source token providers
 - Refactoring and rebuilding a customizable Google LoginHandler
-- Adding other OAuth2 providers like google, github, .. would be a
-  very nice contribution
+- Adding other OAuth2 providers like Google and GitHub
 - the code base
 
-Please use github issues as starting point for contributions, new
-ideas or bugreports.
+Please use GitHub issues as the starting point for contributions, new ideas and/or bug reports.
 
 ## Contact
 
 * E-Mail: team-techmonkeys@zalando.de
 * IRC on freenode: #zalando-techmonkeys
-* Security issues: Please send an E-Mail to [maintainers](MAINTAINERS) and consider to get an answer after at least 2 workdays, if not send an e-mail to team-techmonkeys@zalando.de.
+* Security issues: Please send an email to [maintainers](MAINTAINERS). We'll try to get back to you within two workdays. If you don't hear back, then send an email to team-techmonkeys@zalando.de.
 
 ## Contributors
 
