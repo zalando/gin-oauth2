@@ -43,9 +43,9 @@ resources useful:
 Gin-OAuth2 uses the following [Go](https://golang.org/) packages as
 dependencies:
 
-* [Gin](github.com/gin-gonic/gin)
-* [glog](github.com/golang/glog)
-* [gin-glog](github.com/zalando-techmonkeys/gin-glog)
+* [Gin](https://github.com/gin-gonic/gin)
+* [glog](https://github.com/golang/glog)
+* [gin-glog](https://github.com/zalando-techmonkeys/gin-glog)
 
 ## Installation
 
