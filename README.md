@@ -162,14 +162,9 @@ As shown in [this great article](http://skarlso.github.io/2016/06/12/google-sign
 
 You have to specify a path to your [clientid credential file](./example/test-clientid.google.json) and a slice of
 scopes that you request for authorization.
-You have also to specify the redirect URL to get redirected to, after
-the Google OAuth2 was done.
-As last you have to choose a secret for the CookieStore and a session
-name to be used in [Sessions as
-identifier](https://github.com/gin-gonic/contrib/sessions), such that
-you know who was redirected to your service.
+You have also to specify the URL to get redirected to upon completion of the Google OAuth2.
+Lastly, you have to choose a secret for the CookieStore and a session.
 This OAuth2 flow is also known as [Authorization Code Flow](https://tools.ietf.org/html/rfc6749#section-4.1).
-
 
         redirectURL := "http://127.0.0.1:8081/auth/"
         credFile := "./example/test-clientid.google.json" // you have to build your own
