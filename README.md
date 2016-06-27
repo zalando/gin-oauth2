@@ -98,10 +98,10 @@ To test, you can use curl:
         curl -H "Authorization: Bearer $TOKEN" http://localhost:8081/api/privateUser/
         {"message":"Hello from private for users}
 
-### Team-based access
+### Team-Based Access
 
-As for Uid-Based Access, define your access triples to identify who
-has access to a given resource. In this snippet, we can grant resource
+As with Uid-Based Access, define your access triples to identify who
+has access to a given resource. With this snippet, you can grant resource
 access to an entire team instead of individuals:
 
 	zalando.AccessTuples = []zalando.AccessTuple{
@@ -154,27 +154,79 @@ Request:
     % curl --request GET --header "Authorization: Bearer $TOKEN" http://localhost:8081/api/private
     {"message":"Hello from private for groups""}
 
+### Google-Based Access
+
+As shown in [this great article](http://skarlso.github.io/2016/06/12/google-signin-with-go/) about Gin and Google signin, you have to create credentials for an "OAuth client ID." In your [Google Cloud Console](https://console.cloud.google.com), you will find "Credentials" in the "API Manager":
+
+![Picture of Google Cloud Console showing API Manager](https://github.com/zalando-techmonkeys/gin-oauth2/blob/feature/google-oauth/doc/gcp-credentials.png?raw=true)
+
+Specify your chosen credentials and scopes for authorization, and redirect the URL to get redirected to after the Google OAuth2 was done, a secret for the CookieStore and a session name to be used in [Sessions as identifier](https://github.com/gin-gonic/contrib/sessions).
+
+
+        redirectURL := "http://127.0.0.1:8081/auth/"
+        credFile := "./example/test-clientid.google.json" // you have to build your own
+	scopes := []string{
+		"https://www.googleapis.com/auth/userinfo.email",
+		// You have to select your own scope from here -> https://developers.google.com/identity/protocols/googlescopes#google_sign-in
+	}
+	secret := []byte("secret") //
+	sessionName := "goquestsession"
+
+	router := gin.Default()
+	// init settings for google auth
+	google.Setup(redirectURL, credFile, scopes, secret)
+	router.Use(google.Session(sessionName))
+
+
+After the base setup, register a login handler. You might want to implement it yourself (pull requests are welcome):
+
+	router.GET("/login", google.LoginHandler)
+
+With a publicly accessible login resource in place, we can protect a private router group accessibly only with a Google authorized session. Auth will save your user information in the Gin context bucket "user."
+
+	// protected url group
+	private := router.Group("/auth")
+	private.Use(google.Auth())
+	private.GET("/", UserInfoHandler)
+	private.GET("/api", func(ctx *gin.Context) {
+		ctx.JSON(200, gin.H{"message": "Hello from private for groups"})
+	})
+
+	router.Run("127.0.0.1:8081")
+
+A handler will fetch user information from the gin.Context that's stored in google.Auth.
+
+        func UserInfoHandler(ctx *gin.Context) {
+	        ctx.JSON(http.StatusOK, gin.H{"Hello": "from private", "user": ctx.MustGet("user").(google.User)})
+        }
+
+#### Testing Google Auth
+
+- Created your Google clientid stored in example/test-clientid.google.json.hide similar to and grant redirect to example/test-clientid.google.json as described in the [article](http://skarlso.github.io/2016/06/12/google-signin-with-go/) mentioned before.
+- run the server: ```% go run example/google.go -cred-file example/test-clientid.google.json.hide```
+- open [http://127.0.0.1:8081/login](http://127.0.0.1:8081/login) in your browser
+- In your browser, follow the login, and choose your identity to login with
+- You'll be redirected to the http://127.0.0.1:8081/auth endpoint, which should show your identity data
+
 ## Contributing/TODO
 
-We welcome contributions from the community; just submit a pull
-request. To help you get started, here are some items that we'd love
-help with:
+We welcome contributions from the community; just submit a pull request. To help you get started, here are some items that we'd love help with:
 
 - Adding automated tests, possibly with
   [dex](https://github.com/coreos/dex) to include Travis CI in the
-  setup Add integration with other open-source token providers into
-- Adding other OAuth2 providers like google, github, .. would be a
-  very nice contribution
+  setup 
+- Adding integration with other open-source token providers
+- Refactoring and rebuilding a customizable Google LoginHandler
+- Adding other OAuth2 providers like Google and GitHub
 - the code base
 
-Please use github issues as starting point for contributions, new
-ideas or bugreports.
+Please use GitHub issues as the starting point for contributions, new ideas and/or bug reports.
 
 ## Contact
 
 * E-Mail: team-techmonkeys@zalando.de
 * IRC on freenode: #zalando-techmonkeys
-* Security issues: Please send an E-Mail to [maintainers](MAINTAINERS) and consider to get an answer after at least 2 workdays, if not send an e-mail to team-techmonkeys@zalando.de.
+* Security issues: Please send an email to [maintainers](MAINTAINERS). We'll try to get back to you within two workdays. If you don't hear back, then send an email to team-techmonkeys@zalando.de.
 
 ## Contributors
 
