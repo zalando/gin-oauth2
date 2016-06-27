@@ -100,7 +100,7 @@ To test, you can use curl:
 
 ### Team-Based Access
 
-As with Uid-Based Access, define your access triples to identify who
+As with Uid-based access, define your access triples to identify who
 has access to a given resource. With this snippet, you can grant resource
 access to an entire team instead of individuals:
 
