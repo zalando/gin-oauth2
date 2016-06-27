@@ -20,7 +20,7 @@ advantage of Gin's capabilities and help other devs do likewise.
 
 Gin-OAuth2 is expressive, flexible, and very easy to use. It allows you to:
 - do OAuth2 authorization based on HTTP routing
-- create router groups to place OAuth2 authorization on top, using HTTP verbs and passing them.
+- create router groups to place OAuth2 authorization on top, using HTTP verbs and passing them
 - more easily decouple services by promoting a "say what to do, not how to do it" approach
 - configure your REST API directly in the code (see the "Usage" example below)
 - write your own authorization functions
