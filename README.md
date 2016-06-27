@@ -160,7 +160,15 @@ As shown in [this great article](http://skarlso.github.io/2016/06/12/google-sign
 
 ![Picture of Google Cloud Console showing API Manager](https://github.com/zalando-techmonkeys/gin-oauth2/blob/feature/google-oauth/doc/gcp-credentials.png?raw=true)
 
-Specify your chosen credentials and scopes for authorization, and redirect the URL to get redirected to after the Google OAuth2 was done, a secret for the CookieStore and a session name to be used in [Sessions as identifier](https://github.com/gin-gonic/contrib/sessions).
+You have to specify a path to your [clientid credential file](./example/test-clientid.google.json) and a slice of
+scopes that you request for authorization.
+You have also to specify the redirect URL to get redirected to, after
+the Google OAuth2 was done.
+As last you have to choose a secret for the CookieStore and a session
+name to be used in [Sessions as
+identifier](https://github.com/gin-gonic/contrib/sessions), such that
+you know who was redirected to your service.
+This OAuth2 flow is also known as [Authorization Code Flow](https://tools.ietf.org/html/rfc6749#section-4.1).
 
 
         redirectURL := "http://127.0.0.1:8081/auth/"
@@ -214,7 +222,7 @@ We welcome contributions from the community; just submit a pull request. To help
 
 - Adding automated tests, possibly with
   [dex](https://github.com/coreos/dex) to include Travis CI in the
-  setup 
+  setup
 - Adding integration with other open-source token providers
 - Refactoring and rebuilding a customizable Google LoginHandler
 - Adding other OAuth2 providers like Google and GitHub
