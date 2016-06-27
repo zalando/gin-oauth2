@@ -202,9 +202,9 @@ A handler will fetch user information from the gin.Context that's stored in goog
 
 #### Testing Google Auth
 
-- Created your Google clientid stored in example/test-clientid.google.json.hide similar to and grant redirect to example/test-clientid.google.json as described in the [article](http://skarlso.github.io/2016/06/12/google-signin-with-go/) mentioned before.
-- run the server: ```% go run example/google.go -cred-file example/test-clientid.google.json.hide```
-- open [http://127.0.0.1:8081/login](http://127.0.0.1:8081/login) in your browser
+- Create your Google clientid stored in example/test-clientid.google.json.hide similar to and grant redirect to example/test-clientid.google.json as described in the [article](http://skarlso.github.io/2016/06/12/google-signin-with-go/) mentioned before.
+- Run the server: ```% go run example/google.go -cred-file example/test-clientid.google.json.hide```
+- Open [http://127.0.0.1:8081/login](http://127.0.0.1:8081/login) in your browser
 - In your browser, follow the login, and choose your identity to login with
 - You'll be redirected to the http://127.0.0.1:8081/auth endpoint, which should show your identity data
 
@@ -213,12 +213,12 @@ A handler will fetch user information from the gin.Context that's stored in goog
 We welcome contributions from the community; just submit a pull request. To help you get started, here are some items that we'd love help with:
 
 - Adding automated tests, possibly with
-  [dex](https://github.com/coreos/dex) to include Travis CI in the
+  [dex](https://github.com/coreos/dex), to include Travis CI in the
   setup 
 - Adding integration with other open-source token providers
 - Refactoring and rebuilding a customizable Google LoginHandler
 - Adding other OAuth2 providers like Google and GitHub
-- the code base
+- The code base
 
 Please use GitHub issues as the starting point for contributions, new ideas and/or bug reports.
 
