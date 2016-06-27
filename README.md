@@ -145,7 +145,7 @@ Run example service:
     I1028 10:12:46.794502   22325 ginoauth2.go:213] Grant access to sszuecs
     I1028 10:12:46.794571   22325 ginglog.go:93] [GIN] | 200 | 194.162911ms | [::1]:58629 |   GET     /api/private/
 
-Get an Access Token from your token provider (```oauth2.Endpoint.AuthURL```):
+Get an access token from your token provider (```oauth2.Endpoint.AuthURL```):
 
     % TOKEN=$(curl https://$USER:$PASSWORD@token.oauth2.corp.com/access_token)
 
