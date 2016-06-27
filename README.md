@@ -55,7 +55,7 @@ Assuming you've installed Go and Gin, run this:
 
 ## Usage
 
-[This example](https://github.com/zalando-techmonkeys/gin-oauth2/blob/master/example/main.go) shows you how to use Gin-OAuth2.
+[This example](https://github.com/zalando-techmonkeys/gin-oauth2/blob/master/example/zalando/main.go) shows you how to use Gin-OAuth2.
 
 ### Uid-Based Access
 
@@ -133,7 +133,7 @@ Once again, you can use curl to test:
 
 Run example service:
 
-    % go run example/main.go -v=2 -logtostderr
+    % go run example/zalando/main.go -v=2 -logtostderr
     [GIN-debug] [WARNING] Running in "debug" mode. Switch to "release" mode in production.
     - using env:   export GIN_MODE=release
     - using code:  gin.SetMode(gin.ReleaseMode)
@@ -160,14 +160,14 @@ As shown in [this great article](http://skarlso.github.io/2016/06/12/google-sign
 
 ![Picture of Google Cloud Console showing API Manager](https://github.com/zalando-techmonkeys/gin-oauth2/blob/feature/google-oauth/doc/gcp-credentials.png?raw=true)
 
-You have to specify a path to your [clientid credential file](./example/test-clientid.google.json) and a slice of
+You have to specify a path to your [clientid credential file](./example/google/test-clientid.google.json) and a slice of
 scopes that you request for authorization.
 You have also to specify the URL to get redirected to upon completion of the Google OAuth2.
 Lastly, you have to choose a secret for the CookieStore and a session.
 This OAuth2 flow is also known as [Authorization Code Flow](https://tools.ietf.org/html/rfc6749#section-4.1).
 
         redirectURL := "http://127.0.0.1:8081/auth/"
-        credFile := "./example/test-clientid.google.json" // you have to build your own
+        credFile := "./example/google/test-clientid.google.json" // you have to build your own
 	scopes := []string{
 		"https://www.googleapis.com/auth/userinfo.email",
 		// You have to select your own scope from here -> https://developers.google.com/identity/protocols/googlescopes#google_sign-in
@@ -205,8 +205,8 @@ A handler will fetch user information from the gin.Context that's stored in goog
 
 #### Testing Google Auth
 
-- Created your Google clientid stored in example/test-clientid.google.json.hide similar to and grant redirect to example/test-clientid.google.json as described in the [article](http://skarlso.github.io/2016/06/12/google-signin-with-go/) mentioned before.
-- run the server: ```% go run example/google.go -cred-file example/test-clientid.google.json.hide```
+- Created your Google clientid stored in clientid.google.json similar to and grant redirect to example/google/test-clientid.google.json as described in the [article](http://skarlso.github.io/2016/06/12/google-signin-with-go/) mentioned before.
+- run the server: ```% go run example/google/google.go -cred-file clientid.google.json```
 - open [http://127.0.0.1:8081/login](http://127.0.0.1:8081/login) in your browser
 - In your browser, follow the login, and choose your identity to login with
 - You'll be redirected to the http://127.0.0.1:8081/auth endpoint, which should show your identity data
