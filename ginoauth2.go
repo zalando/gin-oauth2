@@ -9,8 +9,8 @@
 //     	"time"
 //     	"github.com/gin-gonic/gin"
 //     	"github.com/golang/glog"
-//     	"github.com/zalando-techmonkeys/gin-glog"
-//     	"github.com/zalando-techmonkeys/gin-oauth2"
+//     	"github.com/zalando/gin-glog"
+//     	"github.com/zalando/gin-oauth2"
 //     	"golang.org/x/oauth2"
 //     )
 //

@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/zalando-techmonkeys/gin-oauth2"
+	"github.com/zalando/gin-oauth2"
 	"golang.org/x/oauth2"
 )
 

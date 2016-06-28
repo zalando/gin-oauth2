@@ -8,7 +8,7 @@ import (
 	"path"
 
 	"github.com/gin-gonic/gin"
-	"github.com/zalando-techmonkeys/gin-oauth2/google"
+	"github.com/zalando/gin-oauth2/google"
 )
 
 var redirectURL, credFile string

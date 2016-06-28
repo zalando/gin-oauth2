@@ -1,7 +1,7 @@
 # Gin-OAuth2
 
 [![Go Report
-Card](https://goreportcard.com/badge/zalando-techmonkeys/gin-oauth2)](https://goreportcard.com/report/zalando-techmonkeys/gin-oauth2) [![Build Status](https://travis-ci.org/zalando-techmonkeys/gin-oauth2.svg?branch=master)](https://travis-ci.org/zalando-techmonkeys/gin-oauth2)
+Card](https://goreportcard.com/badge/zalando/gin-oauth2)](https://goreportcard.com/report/zalando/gin-oauth2) [![Build Status](https://travis-ci.org/zalando/gin-oauth2.svg?branch=master)](https://travis-ci.org/zalando/gin-oauth2)
 
 
 Gin-OAuth2 is specially made for [Gin Framework](https://github.com/gin-gonic/gin)
@@ -47,17 +47,17 @@ dependencies:
 
 * [Gin](https://github.com/gin-gonic/gin)
 * [glog](https://github.com/golang/glog)
-* [gin-glog](https://github.com/zalando-techmonkeys/gin-glog)
+* [gin-glog](https://github.com/zalando/gin-glog)
 
 ## Installation
 
 Assuming you've installed Go and Gin, run this:
 
-    go get github.com/zalando-techmonkeys/gin-oauth2
+    go get github.com/zalando/gin-oauth2
 
 ## Usage
 
-[This example](https://github.com/zalando-techmonkeys/gin-oauth2/blob/master/example/zalando/main.go) shows you how to use Gin-OAuth2.
+[This example](https://github.com/zalando/gin-oauth2/blob/master/example/zalando/main.go) shows you how to use Gin-OAuth2.
 
 ### Uid-Based Access
 
@@ -160,7 +160,7 @@ Request:
 
 As shown in [this great article](http://skarlso.github.io/2016/06/12/google-signin-with-go/) about Gin and Google signin, you have to create credentials for an "OAuth client ID." In your [Google Cloud Console](https://console.cloud.google.com), you will find "Credentials" in the "API Manager":
 
-![Picture of Google Cloud Console showing API Manager](https://github.com/zalando-techmonkeys/gin-oauth2/blob/feature/google-oauth/doc/gcp-credentials.png?raw=true)
+![Picture of Google Cloud Console showing API Manager](https://github.com/zalando/gin-oauth2/blob/feature/google-oauth/doc/gcp-credentials.png?raw=true)
 
 You have to specify a path to your [clientid credential file](./example/google/test-clientid.google.json) and a slice of
 scopes that you request for authorization.
