@@ -1,6 +1,8 @@
 # Gin-OAuth2
 
-[![Go Report Card](http://goreportcard.com/badge/zalando-techmonkeys/gin-oauth2)](http://goreportcard.com/report/zalando-techmonkeys/gin-oauth2)
+[![Go Report
+Card](https://goreportcard.com/badge/zalando-techmonkeys/gin-oauth2)](https://goreportcard.com/report/zalando-techmonkeys/gin-oauth2) [![Build Status](https://travis-ci.org/zalando-techmonkeys/gin-oauth2.svg?branch=master)](https://travis-ci.org/zalando-techmonkeys/gin-oauth2)
+
 
 Gin-OAuth2 is specially made for [Gin Framework](https://github.com/gin-gonic/gin)
 users who also want to use OAuth2. It was created by Go developers
