@@ -21,7 +21,7 @@ var AccessTuples []AccessTuple
 // AccessTuple is the type defined for use in AccessTuples.
 type AccessTuple struct {
 	Realm string `yaml:"Realm,omitempty"` // p.e. "employees", "services"
-	UID   string `yaml:"Uid,omitempty"`   // UnixName
+	Uid   string `yaml:"Uid,omitempty"`   // UnixName
 	Cn    string `yaml:"Cn,omitempty"`    // RealName
 }
 
@@ -85,7 +85,7 @@ func GroupCheck(tc *ginoauth2.TokenContainer, ctx *gin.Context) bool {
 	for _, teamInfo := range data {
 		for idx := range AccessTuples {
 			at := AccessTuples[idx]
-			if teamInfo.Id == at.UID {
+			if teamInfo.Id == at.Uid {
 				granted = true
 				glog.Infof("Grant access to %s as team member of \"%s\"\n", tc.Scopes["uid"].(string), teamInfo.Id)
 			}
@@ -104,7 +104,7 @@ func UidCheck(tc *ginoauth2.TokenContainer, ctx *gin.Context) bool {
 	uid := tc.Scopes["uid"].(string)
 	for idx := range AccessTuples {
 		at := AccessTuples[idx]
-		if uid == at.UID {
+		if uid == at.Uid {
 			ctx.Set("uid", uid) //in this way I can set the authorized uid
 			glog.Infof("Grant access to %s\n", uid)
 			return true
