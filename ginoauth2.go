@@ -222,8 +222,7 @@ func (t *TokenContainer) Valid() bool {
 //	})
 //
 func Auth(accessCheckFunction AccessCheckFunction, endpoints oauth2.Endpoint) gin.HandlerFunc {
-	accessCheckFunctions := []AccessCheckFunction{accessCheckFunction}
-	return AuthChain(accessCheckFunctions, endpoints)
+	return AuthChain(endpoints, accessCheckFunction)
 }
 
 // AuthChain is a router middleware that can be used to get an authenticated
@@ -247,7 +246,7 @@ func Auth(accessCheckFunction AccessCheckFunction, endpoints oauth2.Endpoint) gi
 //          c.JSON(200, gin.H{"message": "Hello from private"})
 //      })
 //
-func AuthChain(accessCheckFunctions []AccessCheckFunction, endpoints oauth2.Endpoint) gin.HandlerFunc {
+func AuthChain(endpoints oauth2.Endpoint, accessCheckFunctions ...AccessCheckFunction) gin.HandlerFunc {
 	// init
 	AuthInfoURL = endpoints.TokenURL
 	// middleware
