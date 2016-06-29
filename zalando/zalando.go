@@ -20,9 +20,9 @@ var AccessTuples []AccessTuple
 
 // AccessTuple is the type defined for use in AccessTuples.
 type AccessTuple struct {
-	Realm string // p.e. "employees", "services"
-	Uid   string // UnixName
-	Cn    string // RealName
+	Realm string `yaml:"Realm,omitempty"` // p.e. "employees", "services"
+	Uid   string `yaml:"Uid,omitempty"`   // UnixName
+	Cn    string `yaml:"Cn,omitempty"`    // RealName
 }
 
 // TeamInfo is defined like in TeamAPI json.
