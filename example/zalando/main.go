@@ -3,6 +3,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -12,19 +13,21 @@ import (
 	"github.com/zalando/gin-oauth2/zalando"
 )
 
-type AccessTuple struct {
-	Realm string // p.e. "employees", "services"
-	Uid   string // UnixName
-	Cn    string // RealName
+var USERS []zalando.AccessTuple = []zalando.AccessTuple{
+	{"/employees", "sszuecs", "Sandor Szücs"},
+	{"/employees", "njuettner", "Nick Jüttner"},
 }
 
-var USERS []AccessTuple = []AccessTuple{
-	{"employees", "sszuecs", "Sandor Szücs"},
-	{"employees", "njuettner", "Nick Jüttner"},
+var TEAMS []zalando.AccessTuple = []zalando.AccessTuple{
+	{"teams", "opensourceguild", "OpenSource"},
+	{"teams", "tm", "Platform Engineering / System"},
+	{"teams", "teapot", "Platform / Cloud API"},
+}
+var SERVICES []zalando.AccessTuple = []zalando.AccessTuple{
+	{"services", "foo", "Fooservice"},
 }
 
 func main() {
-	zalando.AccessTuples = []zalando.AccessTuple{{"teams", "tm", "Platform Engineering / System"}}
 	flag.Parse()
 	router := gin.New()
 	router.Use(ginglog.Logger(3 * time.Second))
@@ -37,15 +40,40 @@ func main() {
 	})
 
 	private := router.Group("/api/private")
+	privateGroup := router.Group("/api/privateGroup")
 	privateUser := router.Group("/api/privateUser")
-	glog.Infof("Register allowed users: %+v and groups: %+v", USERS, zalando.AccessTuples)
-	private.Use(ginoauth2.Auth(zalando.GroupCheck, zalando.OAuth2Endpoint))
-	privateUser.Use(ginoauth2.Auth(zalando.UidCheck, zalando.OAuth2Endpoint))
+	privateService := router.Group("/api/privateService")
+	glog.Infof("Register allowed users: %+v and groups: %+v and services: %+v", USERS, TEAMS, SERVICES)
+
+	private.Use(ginoauth2.AuthChain(zalando.OAuth2Endpoint, zalando.UidCheck(USERS), zalando.GroupCheck(TEAMS), zalando.UidCheck(SERVICES)))
+	privateGroup.Use(ginoauth2.Auth(zalando.GroupCheck(TEAMS), zalando.OAuth2Endpoint))
+	privateUser.Use(ginoauth2.Auth(zalando.UidCheck(USERS), zalando.OAuth2Endpoint))
+	privateService.Use(ginoauth2.Auth(zalando.UidCheck(SERVICES), zalando.OAuth2Endpoint))
+
 	private.GET("/", func(c *gin.Context) {
-		c.JSON(200, gin.H{"message": "Hello from private for groups"})
+		c.JSON(200, gin.H{"message": "Hello from private for groups and users"})
+	})
+	privateGroup.GET("/", func(c *gin.Context) {
+		uid, okUid := c.Get("uid")
+		if team, ok := c.Get("team"); ok && okUid {
+			c.JSON(200, gin.H{"message": fmt.Sprintf("Hello from private for groups to %s member of %s", uid, team)})
+		} else {
+			c.JSON(200, gin.H{"message": "Hello from private for groups without uid and team"})
+		}
 	})
 	privateUser.GET("/", func(c *gin.Context) {
-		c.JSON(200, gin.H{"message": "Hello from private for users"})
+		if v, ok := c.Get("cn"); ok {
+			c.JSON(200, gin.H{"message": fmt.Sprintf("Hello from private for users to %s", v)})
+		} else {
+			c.JSON(200, gin.H{"message": "Hello from private for users without cn"})
+		}
+	})
+	privateService.GET("/", func(c *gin.Context) {
+		if v, ok := c.Get("cn"); ok {
+			c.JSON(200, gin.H{"message": fmt.Sprintf("Hello from private for services to %s", v)})
+		} else {
+			c.JSON(200, gin.H{"message": "Hello from private for services without cn"})
+		}
 	})
 
 	glog.Info("bootstrapped application")

@@ -68,50 +68,60 @@ func RequestTeamInfo(tc *ginoauth2.TokenContainer, uri string) ([]byte, error) {
 
 // GroupCheck is an authorization function that checks, if the Token
 // was issued for an employee of a specified team. The given
-// TokenContainer must be valid.
-func GroupCheck(tc *ginoauth2.TokenContainer, ctx *gin.Context) bool {
-	blob, err := RequestTeamInfo(tc, TeamAPI)
-	if err != nil {
-		glog.Error("failed to get team info, caused by: ", err)
-		return false
-	}
-	var data []TeamInfo
-	err = json.Unmarshal(blob, &data)
-	if err != nil {
-		glog.Errorf("JSON.Unmarshal failed, caused by: %s", err)
-		return false
-	}
-	granted := false
-	for _, teamInfo := range data {
-		for idx := range AccessTuples {
-			at := AccessTuples[idx]
-			if teamInfo.Id == at.Uid {
-				granted = true
-				glog.Infof("Grant access to %s as team member of \"%s\"\n", tc.Scopes["uid"].(string), teamInfo.Id)
-			}
-			if teamInfo.Type == "official" {
-				ctx.Set("uid", tc.Scopes["uid"].(string))
-				ctx.Set("team", teamInfo.Id)
+// TokenContainer must be valid. As side effect it sets "uid" and
+// "team" in the gin.Context to the "official" team.
+func GroupCheck(at []AccessTuple) func(tc *ginoauth2.TokenContainer, ctx *gin.Context) bool {
+	ats := at
+	return func(tc *ginoauth2.TokenContainer, ctx *gin.Context) bool {
+
+		blob, err := RequestTeamInfo(tc, TeamAPI)
+		if err != nil {
+			glog.Error("failed to get team info, caused by: ", err)
+			return false
+		}
+		var data []TeamInfo
+		err = json.Unmarshal(blob, &data)
+		if err != nil {
+			glog.Errorf("JSON.Unmarshal failed, caused by: %s", err)
+			return false
+		}
+		granted := false
+		for _, teamInfo := range data {
+			for idx := range ats {
+				at := ats[idx]
+				if teamInfo.Id == at.Uid {
+					granted = true
+					glog.Infof("Grant access to %s as team member of \"%s\"\n", tc.Scopes["uid"].(string), teamInfo.Id)
+				}
+				if teamInfo.Type == "official" {
+					ctx.Set("uid", tc.Scopes["uid"].(string))
+					ctx.Set("team", teamInfo.Id)
+				}
 			}
 		}
+		return granted
 	}
-	return granted
 }
 
 // UidCheck is an authorization function that checks UID scope
-// TokenContainer must be Valid.
-func UidCheck(tc *ginoauth2.TokenContainer, ctx *gin.Context) bool {
-	uid := tc.Scopes["uid"].(string)
-	for idx := range AccessTuples {
-		at := AccessTuples[idx]
-		if uid == at.Uid {
-			ctx.Set("uid", uid) //in this way I can set the authorized uid
-			glog.Infof("Grant access to %s\n", uid)
-			return true
+// TokenContainer must be Valid. As side effect it sets "uid" and
+// "cn" in the gin.Context to the authorized uid and cn (Realname).
+func UidCheck(at []AccessTuple) func(tc *ginoauth2.TokenContainer, ctx *gin.Context) bool {
+	ats := at
+	return func(tc *ginoauth2.TokenContainer, ctx *gin.Context) bool {
+		uid := tc.Scopes["uid"].(string)
+		for idx := range ats {
+			at := ats[idx]
+			if tc.Realm == at.Realm && uid == at.Uid {
+				ctx.Set("uid", uid)  //in this way I can set the authorized uid
+				ctx.Set("cn", at.Cn) //in this way I can set the authorized Realname
+				glog.Infof("Grant access to %s\n", uid)
+				return true
+			}
 		}
-	}
 
-	return false
+		return false
+	}
 }
 
 // NoAuthorization sets "team" and "uid" in the context without

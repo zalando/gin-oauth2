@@ -76,6 +76,10 @@ type TokenContainer struct {
 	Realm     string                 // services, employees
 }
 
+// AccessCheckFunction is a function that checks if a given token grants
+// access.
+type AccessCheckFunction func(tc *TokenContainer, ctx *gin.Context) bool
+
 func extractToken(r *http.Request) (*oauth2.Token, error) {
 	hdr := r.Header.Get("Authorization")
 	if hdr == "" {
@@ -217,7 +221,32 @@ func (t *TokenContainer) Valid() bool {
 //		c.JSON(200, gin.H{"message": "Hello from private"})
 //	})
 //
-func Auth(accessCheckFunction func(tc *TokenContainer, ctx *gin.Context) bool, endpoints oauth2.Endpoint) gin.HandlerFunc {
+func Auth(accessCheckFunction AccessCheckFunction, endpoints oauth2.Endpoint) gin.HandlerFunc {
+	return AuthChain(endpoints, accessCheckFunction)
+}
+
+// AuthChain is a router middleware that can be used to get an authenticated
+// and authorized service for the whole router group. Similar to Auth, but
+// takes a chain of AccessCheckFunctions and only fails if all of them fails.
+// Example:
+//
+//      var endpoints oauth2.Endpoint = oauth2.Endpoint{
+//	        AuthURL:  "https://token.oauth2.corp.com/access_token",
+//	        TokenURL: "https://oauth2.corp.com/corp/oauth2/tokeninfo",
+//      }
+//      var acl []ginoauth2.AccessTuple = []ginoauth2.AccessTuple{{"employee", 1070, "sszuecs"}, {"employee", 1114, "njuettner"}}
+//      router := gin.Default()
+//	    private := router.Group("")
+//      checkChain := []AccessCheckFunction{
+//          ginoauth2.UidCheck,
+//          ginoauth2.GroupCheck,
+//      }
+//      private.Use(ginoauth2.AuthChain(checkChain, ginoauth2.endpoints))
+//      private.GET("/api/private", func(c *gin.Context) {
+//          c.JSON(200, gin.H{"message": "Hello from private"})
+//      })
+//
+func AuthChain(endpoints oauth2.Endpoint, accessCheckFunctions ...AccessCheckFunction) gin.HandlerFunc {
 	// init
 	AuthInfoURL = endpoints.TokenURL
 	// middleware
@@ -238,9 +267,15 @@ func Auth(accessCheckFunction func(tc *TokenContainer, ctx *gin.Context) bool, e
 			return
 		}
 
-		if !accessCheckFunction(tokenContainer, ctx) {
-			ctx.AbortWithError(http.StatusForbidden, errors.New("Access to the Resource is fobidden"))
-			return
+		for i, fn := range accessCheckFunctions {
+			if fn(tokenContainer, ctx) {
+				break
+			}
+
+			if len(accessCheckFunctions)-1 == i {
+				ctx.AbortWithError(http.StatusForbidden, errors.New("Access to the Resource is fobidden"))
+				return
+			}
 		}
 
 		// access allowed
