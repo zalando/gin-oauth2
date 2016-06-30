@@ -65,14 +65,15 @@ First, define your access triples to identify who has access to a
 given resource. This snippet shows how to grant resource access to two
 hypothetical employees:
 
-        type AccessTuple struct {
-	     Realm string // p.e. "employees", "services"
-             Uid   string // UnixName
-             Cn    string // RealName
-        }
-        var USERS []AccessTuple = []AccessTuple{
-	    {"employees", "sszuecs", "Sandor Szücs"},
-            {"employees", "njuettner", "Nick Jüttner"},
+        // from zalando package
+        // type AccessTuple struct {
+	//      Realm string // p.e. "employees", "services"
+        //      Uid   string // UnixName
+        //      Cn    string // RealName
+        // }
+        var USERS []zalando.AccessTuple = []zalando.AccessTuple{
+	    {"/employees", "sszuecs", "Sandor Szücs"},
+            {"/employees", "njuettner", "Nick Jüttner"},
         }
 
 Next, define which Gin middlewares you use. The third line in this
@@ -88,9 +89,13 @@ users. We'll use a router group, so that we can add a bunch of router
 paths and HTTP verbs:
 
 	privateUser := router.Group("/api/privateUser")
-	privateUser.Use(ginoauth2.Auth(zalando.UidCheck, zalando.OAuth2Endpoint))
+	privateUser.Use(ginoauth2.Auth(zalando.UidCheck(USERS), zalando.OAuth2Endpoint))
 	privateUser.GET("/", func(c *gin.Context) {
-		c.JSON(200, gin.H{"message": "Hello from private for users"})
+		if v, ok := c.Get("cn"); ok {
+			c.JSON(200, gin.H{"message": fmt.Sprintf("Hello from private for users to %s", v)})
+		} else {
+			c.JSON(200, gin.H{"message": "Hello from private for users without cn"})
+		}
 	})
 
 #### Testing
@@ -98,7 +103,7 @@ paths and HTTP verbs:
 To test, you can use curl:
 
         curl -H "Authorization: Bearer $TOKEN" http://localhost:8081/api/privateUser/
-        {"message":"Hello from private for users}
+        {"message":"Hello from private for users to Sandor Szücs"}
 
 ### Team-Based Access
 
@@ -106,8 +111,10 @@ As with Uid-based access, define your access triples to identify who
 has access to a given resource. With this snippet, you can grant resource
 access to an entire team instead of individuals:
 
-	zalando.AccessTuples = []zalando.AccessTuple{
-            {"teams", "tm", "Platform Engineering / System"},
+        var TEAMS []zalando.AccessTuple = []zalando.AccessTuple{
+	    {"teams", "opensourceguild", "OpenSource Guild"},
+	    {"teams", "tm", "Platform / System"},
+	    {"teams", "teapot", "Platform / Cloud API"},
         }
 
 Now define which Gin middlewares you use:
@@ -120,16 +127,21 @@ Now define which Gin middlewares you use:
 Lastly, define which type of access you grant to the defined
 team. We'll use a router group again:
 
-	private := router.Group("/api/private")
-	private.Use(ginoauth2.Auth(zalando.GroupCheck, zalando.OAuth2Endpoint))
-	private.GET("/", func(c *gin.Context) {
-		c.JSON(200, gin.H{"message": "Hello from private for groups"})
+	privateGroup := router.Group("/api/privateGroup")
+	privateGroup.Use(ginoauth2.Auth(zalando.GroupCheck(TEAMS), zalando.OAuth2Endpoint))
+	privateGroup.GET("/", func(c *gin.Context) {
+		uid, okUid := c.Get("uid")
+		if team, ok := c.Get("team"); ok && okUid {
+			c.JSON(200, gin.H{"message": fmt.Sprintf("Hello from private to %s member of %s", uid, team)})
+		} else {
+			c.JSON(200, gin.H{"message": "Hello from private for groups without uid and team"})
+		}
 	})
 
 Once again, you can use curl to test:
 
-        curl -H "Authorization: Bearer $TOKEN" http://localhost:8081/api/private/
-        {"message":"Hello from private for groups"}
+        curl -H "Authorization: Bearer $TOKEN" http://localhost:8081/api/privateGroup/
+        {"message":"Hello from private to sszuecs member of teapot"}
 
 ### Run Example Service
 
@@ -153,8 +165,8 @@ Get an access token from your token provider (```oauth2.Endpoint.AuthURL```):
 
 Request:
 
-    % curl --request GET --header "Authorization: Bearer $TOKEN" http://localhost:8081/api/private
-    {"message":"Hello from private for groups""}
+    % curl -H "Authorization: Bearer $TOKEN" http://localhost:8081/api/privateGroup/
+    {"message":"Hello from private to sszuecs member of teapot"}
 
 ### Google-Based Access
 
