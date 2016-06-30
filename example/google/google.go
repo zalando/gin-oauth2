@@ -23,7 +23,7 @@ Usage of %s
 		flag.PrintDefaults()
 	}
 	flag.StringVar(&redirectURL, "redirect", "http://127.0.0.1:8081/auth/", "URL to be redirected to after authorization.")
-	flag.StringVar(&credFile, "cred-file", "./example/test-clientid.google.json", "Credential JSON file")
+	flag.StringVar(&credFile, "cred-file", "./example/google/test-clientid.google.json", "Credential JSON file")
 }
 func main() {
 	flag.Parse()
