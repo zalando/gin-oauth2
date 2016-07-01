@@ -4,3 +4,5 @@ approvals:
     orgs:
       - zalando
 X-Zalando-Team: teapot
+# one of [code, doc, config, tools, secrets]
+X-Zalando-Type: code
