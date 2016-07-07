@@ -76,13 +76,13 @@ func GroupCheck(at []AccessTuple) func(tc *ginoauth2.TokenContainer, ctx *gin.Co
 
 		blob, err := RequestTeamInfo(tc, TeamAPI)
 		if err != nil {
-			glog.Error("failed to get team info, caused by: ", err)
+			glog.Errorf("[Gin-OAuth] failed to get team info, caused by: %s", err)
 			return false
 		}
 		var data []TeamInfo
 		err = json.Unmarshal(blob, &data)
 		if err != nil {
-			glog.Errorf("JSON.Unmarshal failed, caused by: %s", err)
+			glog.Errorf("[Gin-OAuth] JSON.Unmarshal failed, caused by: %s", err)
 			return false
 		}
 		granted := false
@@ -91,7 +91,7 @@ func GroupCheck(at []AccessTuple) func(tc *ginoauth2.TokenContainer, ctx *gin.Co
 				at := ats[idx]
 				if teamInfo.Id == at.Uid {
 					granted = true
-					glog.Infof("Grant access to %s as team member of \"%s\"\n", tc.Scopes["uid"].(string), teamInfo.Id)
+					glog.Infof("[Gin-OAuth] Grant access to %s as team member of \"%s\"\n", tc.Scopes["uid"].(string), teamInfo.Id)
 				}
 				if teamInfo.Type == "official" {
 					ctx.Set("uid", tc.Scopes["uid"].(string))
@@ -115,7 +115,7 @@ func UidCheck(at []AccessTuple) func(tc *ginoauth2.TokenContainer, ctx *gin.Cont
 			if tc.Realm == at.Realm && uid == at.Uid {
 				ctx.Set("uid", uid)  //in this way I can set the authorized uid
 				ctx.Set("cn", at.Cn) //in this way I can set the authorized Realname
-				glog.Infof("Grant access to %s\n", uid)
+				glog.Infof("[Gin-OAuth] Grant access to %s\n", uid)
 				return true
 			}
 		}
@@ -131,7 +131,7 @@ func NoAuthorization(tc *ginoauth2.TokenContainer, ctx *gin.Context) bool {
 	var data []TeamInfo
 	err = json.Unmarshal(blob, &data)
 	if err != nil {
-		glog.Errorf("JSON.Unmarshal failed, caused by: %s", err)
+		glog.Errorf("[Gin-OAuth] JSON.Unmarshal failed, caused by: %s", err)
 	}
 	for _, teamInfo := range data {
 		if teamInfo.Type == "official" {
