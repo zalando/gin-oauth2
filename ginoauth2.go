@@ -34,6 +34,8 @@
 //     	router.Use(ginglog.Logger(3 * time.Second))
 //     	router.Use(gin.Recovery())
 //
+//     	ginoauth2.VarianceTimer = 300 * time.Millisecond // defaults to 30s
+//
 //     	public := router.Group("/api")
 //     	public.GET("/", func(c *gin.Context) {
 //     		c.JSON(200, gin.H{"message": "Hello to public world"})
@@ -53,7 +55,6 @@ package ginoauth2
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -65,10 +66,16 @@ import (
 	"golang.org/x/oauth2"
 )
 
-var AuthInfoURL string
-var Realms []string = []string{"employees", "services"}
-var Transport http.Transport = http.Transport{}
+// VarianceTimer controls the max runtime of Auth() and AuthChain() middleware
+var VarianceTimer time.Duration = 30000 * time.Millisecond
 
+// AuthInfoURL is the URL to get information of your token
+var AuthInfoURL string
+
+// Transport to use for client http connections to AuthInfoURL
+var Transport = http.Transport{}
+
+// TokenContainer stores all relevant token information
 type TokenContainer struct {
 	Token     *oauth2.Token
 	Scopes    map[string]interface{} // LDAP record vom Benutzer (cn, ..
@@ -154,20 +161,20 @@ func ParseTokenContainer(t *oauth2.Token, data map[string]interface{}) (*TokenCo
 func GetTokenContainer(token *oauth2.Token) (*TokenContainer, error) {
 	body, err := RequestAuthInfo(token)
 	if err != nil {
-		glog.Errorf("RequestAuthInfo failed caused by: %s", err)
+		glog.Errorf("[Gin-OAuth] RequestAuthInfo failed caused by: %s", err)
 		return nil, err
 	}
 	// extract AuthInfo
 	var data map[string]interface{}
 	err = json.Unmarshal(body, &data)
 	if err != nil {
-		glog.Errorf("JSON.Unmarshal failed caused by: %s", err)
+		glog.Errorf("[Gin-OAuth] JSON.Unmarshal failed caused by: %s", err)
 		return nil, err
 	}
 	if _, ok := data["error_description"]; ok {
 		var s string
 		s = data["error_description"].(string)
-		glog.Errorf("RequestAuthInfo returned an error: %s", s)
+		glog.Errorf("[Gin-OAuth] RequestAuthInfo returned an error: %s", s)
 		return nil, errors.New(s)
 	}
 	return ParseTokenContainer(token, data)
@@ -179,16 +186,16 @@ func getTokenContainer(ctx *gin.Context) (*TokenContainer, bool) {
 	var err error
 
 	if oauthToken, err = extractToken(ctx.Request); err != nil {
-		glog.Errorf("Can not extract oauth2.Token, caused by: %s", err)
+		glog.Errorf("[Gin-OAuth] Can not extract oauth2.Token, caused by: %s", err)
 		return nil, false
 	}
 	if !oauthToken.Valid() {
-		glog.Infof("Invalid Token - nil or expired")
+		glog.Infof("[Gin-OAuth] Invalid Token - nil or expired")
 		return nil, false
 	}
 
 	if tc, err = GetTokenContainer(oauthToken); err != nil {
-		glog.Errorf("Can not extract TokenContainer, caused by: %s", err)
+		glog.Errorf("[Gin-OAuth] Can not extract TokenContainer, caused by: %s", err)
 		return nil, false
 	}
 
@@ -251,35 +258,58 @@ func AuthChain(endpoints oauth2.Endpoint, accessCheckFunctions ...AccessCheckFun
 	AuthInfoURL = endpoints.TokenURL
 	// middleware
 	return func(ctx *gin.Context) {
+		t := time.Now()
+		varianceControl := make(chan bool, 1)
 		var tokenContainer *TokenContainer
-		tokenContainer, ok := getTokenContainer(ctx)
-		if !ok {
-			// set LOCATION header to auth endpoint such that the user can easily get a new access-token
-			ctx.Writer.Header().Set("Location", endpoints.AuthURL)
-			ctx.AbortWithError(http.StatusUnauthorized, errors.New("No token in context"))
-			return
-		}
 
-		if !tokenContainer.Valid() {
-			// set LOCATION header to auth endpoint such that the user can easily get a new access-token
-			ctx.Writer.Header().Set("Location", endpoints.AuthURL)
-			ctx.AbortWithError(http.StatusUnauthorized, errors.New("Invalid Token"))
-			return
-		}
-
-		for i, fn := range accessCheckFunctions {
-			if fn(tokenContainer, ctx) {
-				break
-			}
-
-			if len(accessCheckFunctions)-1 == i {
-				ctx.AbortWithError(http.StatusForbidden, errors.New("Access to the Resource is fobidden"))
+		go func() {
+			ok := false
+			tokenContainer, ok = getTokenContainer(ctx)
+			if !ok {
+				// set LOCATION header to auth endpoint such that the user can easily get a new access-token
+				ctx.Writer.Header().Set("Location", endpoints.AuthURL)
+				ctx.AbortWithError(http.StatusUnauthorized, errors.New("No token in context"))
+				varianceControl <- false
 				return
 			}
+
+			if !tokenContainer.Valid() {
+				// set LOCATION header to auth endpoint such that the user can easily get a new access-token
+				ctx.Writer.Header().Set("Location", endpoints.AuthURL)
+				ctx.AbortWithError(http.StatusUnauthorized, errors.New("Invalid Token"))
+				varianceControl <- false
+				return
+			}
+
+			for i, fn := range accessCheckFunctions {
+				if fn(tokenContainer, ctx) {
+					varianceControl <- true
+					break
+				}
+
+				if len(accessCheckFunctions)-1 == i {
+					ctx.AbortWithError(http.StatusForbidden, errors.New("Access to the Resource is fobidden"))
+					varianceControl <- false
+					return
+				}
+			}
+		}()
+
+		select {
+		case ok := <-varianceControl:
+			if !ok {
+				glog.V(2).Infof("[Gin-OAuth] %12v %s access not allowed", time.Since(t), ctx.Request.URL.Path)
+				return
+			}
+		case <-time.After(VarianceTimer):
+			glog.V(2).Infof("[Gin-OAuth] %12v %s overtime", time.Since(t), ctx.Request.URL.Path)
+			return
 		}
 
 		// access allowed
 		ctx.Writer.Header().Set("Bearer", tokenContainer.Token.AccessToken)
+
+		glog.V(2).Infof("[Gin-OAuth] %12v %s access allowed", time.Since(t), ctx.Request.URL.Path)
 	}
 }
 
@@ -316,7 +346,7 @@ func RequestLogger(keys []string, contentKey string) gin.HandlerFunc {
 						values = append(values, val.(string))
 					}
 				}
-				glog.Info(fmt.Sprintf("Request: %+v for %s", data, strings.Join(values, "-")))
+				glog.Infof("[Gin-OAuth] Request: %+v for %s", data, strings.Join(values, "-"))
 			}
 		}
 	}
