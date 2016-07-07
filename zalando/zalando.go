@@ -20,9 +20,9 @@ var AccessTuples []AccessTuple
 
 // AccessTuple is the type defined for use in AccessTuples.
 type AccessTuple struct {
-	Realm string `yaml:"Realm,omitempty"` // p.e. "employees", "services"
-	Uid   string `yaml:"Uid,omitempty"`   // UnixName
-	Cn    string `yaml:"Cn,omitempty"`    // RealName
+	Realm string `yaml:"realm,omitempty"` // p.e. "employees", "services"
+	Uid   string `yaml:"uid,omitempty"`   // UnixName
+	Cn    string `yaml:"cn,omitempty"`    // RealName
 }
 
 // TeamInfo is defined like in TeamAPI json.
@@ -73,7 +73,6 @@ func RequestTeamInfo(tc *ginoauth2.TokenContainer, uri string) ([]byte, error) {
 func GroupCheck(at []AccessTuple) func(tc *ginoauth2.TokenContainer, ctx *gin.Context) bool {
 	ats := at
 	return func(tc *ginoauth2.TokenContainer, ctx *gin.Context) bool {
-
 		blob, err := RequestTeamInfo(tc, TeamAPI)
 		if err != nil {
 			glog.Error("failed to get team info, caused by: ", err)
@@ -119,7 +118,6 @@ func UidCheck(at []AccessTuple) func(tc *ginoauth2.TokenContainer, ctx *gin.Cont
 				return true
 			}
 		}
-
 		return false
 	}
 }
