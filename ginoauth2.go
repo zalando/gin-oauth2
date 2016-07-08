@@ -302,6 +302,7 @@ func AuthChain(endpoints oauth2.Endpoint, accessCheckFunctions ...AccessCheckFun
 				return
 			}
 		case <-time.After(VarianceTimer):
+			ctx.AbortWithError(http.StatusGatewayTimeout, errors.New("Authorization check overtime"))
 			glog.V(2).Infof("[Gin-OAuth] %12v %s overtime", time.Since(t), ctx.Request.URL.Path)
 			return
 		}
