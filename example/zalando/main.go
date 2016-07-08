@@ -34,6 +34,8 @@ func main() {
 	router.Use(ginoauth2.RequestLogger([]string{"uid"}, "data"))
 	router.Use(gin.Recovery())
 
+	ginoauth2.VarianceTimer = 300 * time.Millisecond // defaults to 30s
+
 	public := router.Group("/api")
 	public.GET("/", func(c *gin.Context) {
 		c.JSON(200, gin.H{"message": "Hello to public world"})
