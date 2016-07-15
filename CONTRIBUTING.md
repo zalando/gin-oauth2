@@ -8,5 +8,5 @@ Pull requests should only be merged after all discussions have been concluded an
 
 ## Guidelines
 
-- **every code change** needs a test
+- **every code change** should have a test
 - keep the current code style
