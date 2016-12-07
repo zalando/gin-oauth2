@@ -124,19 +124,21 @@ func UidCheck(at []AccessTuple) func(tc *ginoauth2.TokenContainer, ctx *gin.Cont
 
 // NoAuthorization sets "team" and "uid" in the context without
 // checking if the user/team is authorized.
-func NoAuthorization(tc *ginoauth2.TokenContainer, ctx *gin.Context) bool {
-	blob, err := RequestTeamInfo(tc, TeamAPI)
-	var data []TeamInfo
-	err = json.Unmarshal(blob, &data)
-	if err != nil {
-		glog.Errorf("[Gin-OAuth] JSON.Unmarshal failed, caused by: %s", err)
-	}
-	for _, teamInfo := range data {
-		if teamInfo.Type == "official" {
-			ctx.Set("uid", tc.Scopes["uid"].(string))
-			ctx.Set("team", teamInfo.Id)
-			return true
+func NoAuthorization() func(tc *ginoauth2.TokenContainer, ctx *gin.Context) bool {
+	return func(tc *ginoauth2.TokenContainer, ctx *gin.Context) bool {
+		blob, err := RequestTeamInfo(tc, TeamAPI)
+		var data []TeamInfo
+		err = json.Unmarshal(blob, &data)
+		if err != nil {
+			glog.Errorf("[Gin-OAuth] JSON.Unmarshal failed, caused by: %s", err)
 		}
+		for _, teamInfo := range data {
+			if teamInfo.Type == "official" {
+				ctx.Set("uid", tc.Scopes["uid"].(string))
+				ctx.Set("team", teamInfo.Id)
+				return true
+			}
+		}
+		return true
 	}
-	return true
 }
