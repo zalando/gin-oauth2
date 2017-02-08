@@ -307,9 +307,6 @@ func AuthChain(endpoints oauth2.Endpoint, accessCheckFunctions ...AccessCheckFun
 			return
 		}
 
-		// access allowed
-		ctx.Writer.Header().Set("Bearer", tokenContainer.Token.AccessToken)
-
 		glog.V(2).Infof("[Gin-OAuth] %12v %s access allowed", time.Since(t), ctx.Request.URL.Path)
 	}
 }
