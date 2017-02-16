@@ -172,7 +172,7 @@ Request:
 
 As shown in [this great article](http://skarlso.github.io/2016/06/12/google-signin-with-go/) about Gin and Google signin, you have to create credentials for an "OAuth client ID." In your [Google Cloud Console](https://console.cloud.google.com), you will find "Credentials" in the "API Manager":
 
-![Picture of Google Cloud Console showing API Manager](https://github.com/zalando/gin-oauth2/blob/feature/google-oauth/doc/gcp-credentials.png?raw=true)
+![Picture of Google Cloud Console showing API Manager](https://raw.githubusercontent.com/zalando/gin-oauth2/master/doc/gcp-credentials.png)
 
 You have to specify a path to your [clientid credential file](./example/google/test-clientid.google.json) and a slice of
 scopes that you request for authorization.
