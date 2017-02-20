@@ -67,7 +67,7 @@ hypothetical employees:
 
         // from zalando package
         // type AccessTuple struct {
-	//      Realm string // p.e. "employees", "services"
+        //      Realm string // p.e. "employees", "services"
         //      Uid   string // UnixName
         //      Cn    string // RealName
         // }
@@ -182,9 +182,9 @@ This OAuth2 flow is also known as [Authorization Code Flow](https://tools.ietf.o
 
         redirectURL := "http://127.0.0.1:8081/auth/"
         credFile := "./example/google/test-clientid.google.json" // you have to build your own
-	scopes := []string{
-		"https://www.googleapis.com/auth/userinfo.email",
-		// You have to select your own scope from here -> https://developers.google.com/identity/protocols/googlescopes#google_sign-in
+        scopes := []string{
+               "https://www.googleapis.com/auth/userinfo.email",
+               // You have to select your own scope from here -> https://developers.google.com/identity/protocols/googlescopes#google_sign-in
 	}
 	secret := []byte("secret") //
 	sessionName := "goquestsession"
@@ -241,15 +241,17 @@ Please use GitHub issues as the starting point for contributions, new ideas and/
 
 ## Contact
 
-* E-Mail: team-techmonkeys@zalando.de
-* IRC on freenode: #zalando-techmonkeys
-* Security issues: Please send an email to [maintainers](MAINTAINERS). We'll try to get back to you within two workdays. If you don't hear back, then send an email to team-techmonkeys@zalando.de.
+* E-Mail: team-teapot@zalando.de
+* Security issues: Please send an email to
+  [maintainers](MAINTAINERS). We'll try to get back to you within two
+  workdays. If you don't hear back ,then send an email to team-teapot@zalando.de.
 
 ## Contributors
 
 Thanks to:
 
 - Olivier Mengué
+- Josta Yee
 
 ## License
 
