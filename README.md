@@ -241,8 +241,10 @@ Please use GitHub issues as the starting point for contributions, new ideas and/
 
 ## Contact
 
-* E-Mail: sandor.szuecs@zalando.de
-* Security issues: Please send an email to [maintainers](MAINTAINERS). We'll try to get back to you within two workdays.
+* E-Mail: team-teapot@zalando.de
+* Security issues: Please send an email to
+  [maintainers](MAINTAINERS). We'll try to get back to you within two
+  workdays. If you don't hear back ,then send an email to team-teapot@zalando.de.
 
 ## Contributors
 
