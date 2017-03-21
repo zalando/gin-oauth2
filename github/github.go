@@ -19,9 +19,6 @@ import (
 	oauth2gh "golang.org/x/oauth2/github"
 )
 
-type User struct {
-}
-
 // Credentials stores google client-ids.
 type Credentials struct {
 	ClientID     string `json:"clientid"`
