@@ -225,6 +225,71 @@ A handler will fetch user information from the gin.Context that's stored in goog
 - In your browser, follow the login, and choose your identity to login with
 - You'll be redirected to the http://127.0.0.1:8081/auth endpoint, which should show your identity data
 
+### GitHub-Based Access
+
+As shown in [this blog post](https://blog.kowalczyk.info/article/f/Accessing-GitHub-API-from-Go.html) about Go and GitHub signin, you have to [register your application](https://github.com/settings/applications/new) with GitHub to get an "OAuth client ID." In your [developer applications](https://github.com/settings/developers), you will find your "Credentials":
+
+From this article the flow of OAuth2 is:
+
+* the user is on your website and clicks “login with GitHub” link
+* you redirect the user to GitHub’s authorization page. In that url you specify desired access level and a random secret
+the user authorizes your app by clicking on a link
+* GitHub redirects to a callback url on your website (which you provided when registering the app with GitHub)
+* in the url handler, extract “secret” and “code” args
+* you have to check that the secret is the same as the one you sent to GitHub (security measure that prevents forgery)
+* you call another GitHub url to exchange code for access token
+
+You have to specify a path to your [clientid credential file](./example/github/test-clientid.github.json) and a slice of
+scopes that you request for authorization.
+You have also to specify the URL to get redirected to upon completion of the GitHub OAuth2.
+Lastly, you have to choose a secret for the CookieStore and a session.
+This OAuth2 flow is also known as [Authorization Code Flow](https://tools.ietf.org/html/rfc6749#section-4.1).
+
+        redirectURL := "http://127.0.0.1:8081/auth/"
+        credFile := "./example/github/test-clientid.github.json" // you have to build your own
+        scopes := []string{
+               "repo",
+               // You have to select your own scope from here -> https://developer.github.com/v3/oauth/#scopes
+	}
+	secret := []byte("secret") //
+	sessionName := "goquestsession"
+
+	router := gin.Default()
+	// init settings for github auth
+	github.Setup(redirectURL, credFile, scopes, secret)
+	router.Use(github.Session(sessionName))
+
+
+After the base setup, register a login handler. You might want to implement it yourself (pull requests are welcome):
+
+	router.GET("/login", github.LoginHandler)
+
+With a publicly accessible login resource in place, we can protect a private router group accessibly only with a GitHub authorized session. Auth will save your user information in the Gin context bucket "user."
+
+	// protected url group
+	private := router.Group("/auth")
+	private.Use(google.Auth())
+	private.GET("/", UserInfoHandler)
+	private.GET("/api", func(ctx *gin.Context) {
+		ctx.JSON(200, gin.H{"message": "Hello from private for groups"})
+	})
+
+	router.Run("127.0.0.1:8081")
+
+A handler will fetch user information from the gin.Context that's stored in github.Auth.
+
+        func UserInfoHandler(ctx *gin.Context) {
+	        ctx.JSON(http.StatusOK, gin.H{"Hello": "from private", "user": ctx.MustGet("user")})
+        }
+
+#### Testing GitHub Auth
+
+- Created your GitHub clientid stored in clientid.github.json similar to and grant redirect to example/github/test-clientid.github.json, get this from your [GitHub application](https://github.com/settings/applications).
+- run the server: ```% go run example/github/github.go -cred-file clientid.github.json```
+- open [http://127.0.0.1:8081/login](http://127.0.0.1:8081/login) in your browser
+- In your browser, follow the login, and choose your identity to login with
+- You'll be redirected to the http://127.0.0.1:8081/auth endpoint, which should show your identity data
+
 ## Contributing/TODO
 
 We welcome contributions from the community; just submit a pull request. To help you get started, here are some items that we'd love help with:
