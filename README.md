@@ -47,7 +47,7 @@ dependencies:
 
 * [Gin](https://github.com/gin-gonic/gin)
 * [glog](https://github.com/golang/glog)
-* [gin-glog](https://github.com/zalando/gin-glog)
+* [gin-glog](https://github.com/szuecs/gin-glog)
 
 ## Installation
 
