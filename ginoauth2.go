@@ -260,11 +260,9 @@ func AuthChain(endpoints oauth2.Endpoint, accessCheckFunctions ...AccessCheckFun
 	return func(ctx *gin.Context) {
 		t := time.Now()
 		varianceControl := make(chan bool, 1)
-		var tokenContainer *TokenContainer
 
 		go func() {
-			ok := false
-			tokenContainer, ok = getTokenContainer(ctx)
+			tokenContainer, ok := getTokenContainer(ctx)
 			if !ok {
 				// set LOCATION header to auth endpoint such that the user can easily get a new access-token
 				ctx.Writer.Header().Set("Location", endpoints.AuthURL)

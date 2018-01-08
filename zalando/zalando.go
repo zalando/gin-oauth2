@@ -37,7 +37,7 @@ type TeamInfo struct {
 
 // OAuth2Endpoint is similar to the definitions in golang.org/x/oauth2
 var OAuth2Endpoint = oauth2.Endpoint{
-	AuthURL:  "https://token.auth.zalando.com/access_token",
+	AuthURL:  "https://identity.zalando.com/oauth2/token",
 	TokenURL: "https://info.services.auth.zalando.com/oauth2/tokeninfo",
 }
 
@@ -119,6 +119,46 @@ func UidCheck(at []AccessTuple) func(tc *ginoauth2.TokenContainer, ctx *gin.Cont
 			}
 		}
 		return false
+	}
+}
+
+// ScopeCheck does an OR check of scopes given from token of the
+// request to all provided scopes. If one of provided scopes is in the
+// Scopes of the token it grants access to the resource.
+func ScopeCheck(name string, scopes ...string) func(tc *ginoauth2.TokenContainer, ctx *gin.Context) bool {
+	glog.Infof("ScopeCheck %s configured to grant access for scopes: %v", name, scopes)
+	configuredScopes := scopes
+	return func(tc *ginoauth2.TokenContainer, ctx *gin.Context) bool {
+		scopesFromToken := make([]string, 0)
+		for _, s := range configuredScopes {
+			if cur, ok := tc.Scopes[s].(string); ok {
+				glog.V(2).Infof("Found configured scope %s", cur)
+				scopesFromToken = append(scopesFromToken, cur)
+				ctx.Set(s, cur) // set value from token of configured scope to the context, which you can use in your application.
+			}
+		}
+		return len(scopesFromToken) > 0
+	}
+}
+
+// ScopeAndCheck does an AND check of scopes given from token of the
+// request to all provided scopes. Only if all of provided scopes are found in the
+// Scopes of the token it grants access to the resource.
+func ScopeAndCheck(name string, scopes ...string) func(tc *ginoauth2.TokenContainer, ctx *gin.Context) bool {
+	glog.Infof("ScopeCheck %s configured to grant access only if scopes: %v are present", name, scopes)
+	configuredScopes := scopes
+	return func(tc *ginoauth2.TokenContainer, ctx *gin.Context) bool {
+		scopesFromToken := make([]string, 0)
+		for _, s := range configuredScopes {
+			if cur, ok := tc.Scopes[s].(string); ok {
+				glog.V(2).Infof("Found configured scope %s", cur)
+				scopesFromToken = append(scopesFromToken, cur)
+				ctx.Set(s, cur) // set value from token of configured scope to the context, which you can use in your application.
+			} else {
+				return false
+			}
+		}
+		return true
 	}
 }
 
