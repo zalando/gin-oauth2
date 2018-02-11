@@ -102,10 +102,45 @@ func GroupCheck(at []AccessTuple) func(tc *ginoauth2.TokenContainer, ctx *gin.Co
 	}
 }
 
+// GroupCheckNetHTTP is the net/http version of GroupCheck
+func GroupCheckNetHTTP(at []AccessTuple) func(tc *ginoauth2.TokenContainer, w http.ResponseWriter, r *http.Request) bool {
+	ats := at
+	return func(tc *ginoauth2.TokenContainer, w http.ResponseWriter, r *http.Request) bool {
+		blob, err := RequestTeamInfo(tc, TeamAPI)
+		if err != nil {
+			glog.Errorf("[Gin-OAuth] failed to get team info, caused by: %s", err)
+			return false
+		}
+		var data []TeamInfo
+		err = json.Unmarshal(blob, &data)
+		if err != nil {
+			glog.Errorf("[Gin-OAuth] JSON.Unmarshal failed, caused by: %s", err)
+			return false
+		}
+		granted := false
+		for _, teamInfo := range data {
+			for idx := range ats {
+				at := ats[idx]
+				if teamInfo.Id == at.Uid {
+					granted = true
+					glog.Infof("[Gin-OAuth] Grant access to %s as team member of \"%s\"\n", tc.Scopes["uid"].(string), teamInfo.Id)
+				}
+				if teamInfo.Type == "official" {
+					if uid, ok := tc.Scopes["uid"].(string); ok {
+						w.Header().Set("uid", uid)
+						w.Header().Set("team", teamInfo.Id)
+					}
+				}
+			}
+		}
+		return granted
+	}
+}
+
 // UidCheck is an authorization function that checks UID scope
 // TokenContainer must be Valid. As side effect it sets "uid" and
 // "cn" in the gin.Context to the authorized uid and cn (Realname).
-func UidCheck(at []AccessTuple) func(tc *ginoauth2.TokenContainer, ctx *gin.Context) bool {
+func UidCheck(at []AccessTuple) ginoauth2.AccessCheckFunction {
 	ats := at
 	return func(tc *ginoauth2.TokenContainer, ctx *gin.Context) bool {
 		uid := tc.Scopes["uid"].(string)
@@ -114,6 +149,24 @@ func UidCheck(at []AccessTuple) func(tc *ginoauth2.TokenContainer, ctx *gin.Cont
 			if tc.Realm == at.Realm && uid == at.Uid {
 				ctx.Set("uid", uid)  //in this way I can set the authorized uid
 				ctx.Set("cn", at.Cn) //in this way I can set the authorized Realname
+				glog.Infof("[Gin-OAuth] Grant access to %s\n", uid)
+				return true
+			}
+		}
+		return false
+	}
+}
+
+// UidCheckNetHTTP is the net/http version of UidCheck
+func UidCheckNetHTTP(at []AccessTuple) ginoauth2.AccessCheckFunctionNetHTTP {
+	ats := at
+	return func(tc *ginoauth2.TokenContainer, w http.ResponseWriter, r *http.Request) bool {
+		uid := tc.Scopes["uid"].(string)
+		for idx := range ats {
+			at := ats[idx]
+			if tc.Realm == at.Realm && uid == at.Uid {
+				w.Header().Set("uid", uid)
+				w.Header().Set("cn", at.Cn)
 				glog.Infof("[Gin-OAuth] Grant access to %s\n", uid)
 				return true
 			}
@@ -141,6 +194,23 @@ func ScopeCheck(name string, scopes ...string) func(tc *ginoauth2.TokenContainer
 	}
 }
 
+// ScopeCheckNetHTTP is the net/http version of ScopeCheck
+func ScopeCheckNetHTTP(name string, scopes ...string) func(tc *ginoauth2.TokenContainer, w http.ResponseWriter, r *http.Request) bool {
+	glog.Infof("ScopeCheck %s configured to grant access for scopes: %v", name, scopes)
+	configuredScopes := scopes
+	return func(tc *ginoauth2.TokenContainer, w http.ResponseWriter, r *http.Request) bool {
+		scopesFromToken := make([]string, 0)
+		for _, s := range configuredScopes {
+			if cur, ok := tc.Scopes[s].(string); ok {
+				glog.V(2).Infof("Found configured scope %s", cur)
+				scopesFromToken = append(scopesFromToken, cur)
+				w.Header().Add(s, cur)
+			}
+		}
+		return len(scopesFromToken) > 0
+	}
+}
+
 // ScopeAndCheck does an AND check of scopes given from token of the
 // request to all provided scopes. Only if all of provided scopes are found in the
 // Scopes of the token it grants access to the resource.
@@ -154,6 +224,25 @@ func ScopeAndCheck(name string, scopes ...string) func(tc *ginoauth2.TokenContai
 				glog.V(2).Infof("Found configured scope %s", cur)
 				scopesFromToken = append(scopesFromToken, cur)
 				ctx.Set(s, cur) // set value from token of configured scope to the context, which you can use in your application.
+			} else {
+				return false
+			}
+		}
+		return true
+	}
+}
+
+// ScopeAndCheckNetHTTP is the net/http version of ScopeAndCheck
+func ScopeAndCheckNetHTTP(name string, scopes ...string) func(tc *ginoauth2.TokenContainer, w http.ResponseWriter, r *http.Request) bool {
+	glog.Infof("ScopeCheck %s configured to grant access only if scopes: %v are present", name, scopes)
+	configuredScopes := scopes
+	return func(tc *ginoauth2.TokenContainer, w http.ResponseWriter, r *http.Request) bool {
+		scopesFromToken := make([]string, 0)
+		for _, s := range configuredScopes {
+			if cur, ok := tc.Scopes[s].(string); ok {
+				glog.V(2).Infof("Found configured scope %s", cur)
+				scopesFromToken = append(scopesFromToken, cur)
+				w.Header().Add(s, cur)
 			} else {
 				return false
 			}
