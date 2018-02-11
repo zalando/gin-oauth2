@@ -57,7 +57,6 @@ import (
 	"errors"
 	"io/ioutil"
 	"net/http"
-	"net/url"
 	"strings"
 	"time"
 
@@ -106,15 +105,12 @@ func extractToken(r *http.Request) (*oauth2.Token, error) {
 }
 
 func RequestAuthInfo(t *oauth2.Token) ([]byte, error) {
-	var uv = make(url.Values)
-	// uv.Set("realm", o.Realm)
-	uv.Set("access_token", t.AccessToken)
-	infoURL := AuthInfoURL + "?" + uv.Encode()
 	client := &http.Client{Transport: &Transport}
-	req, err := http.NewRequest("GET", infoURL, nil)
+	req, err := http.NewRequest("GET", AuthInfoURL, nil)
 	if err != nil {
 		return nil, err
 	}
+	req.Header.Add("Authorization", "Bearer "+t.AccessToken)
 
 	resp, err := client.Do(req)
 	if err != nil {
@@ -175,9 +171,9 @@ func GetTokenContainer(token *oauth2.Token) (*TokenContainer, error) {
 		glog.Errorf("[Gin-OAuth] JSON.Unmarshal failed caused by: %s", err)
 		return nil, err
 	}
-	if _, ok := data["error_description"]; ok {
+	if ed, ok := data["error_description"]; ok {
 		var s string
-		s = data["error_description"].(string)
+		s = ed.(string)
 		glog.Errorf("[Gin-OAuth] RequestAuthInfo returned an error: %s", s)
 		return nil, errors.New(s)
 	}
