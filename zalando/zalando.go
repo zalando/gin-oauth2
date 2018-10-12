@@ -131,9 +131,9 @@ func ScopeCheck(name string, scopes ...string) func(tc *ginoauth2.TokenContainer
 	return func(tc *ginoauth2.TokenContainer, ctx *gin.Context) bool {
 		scopesFromToken := make([]string, 0)
 		for _, s := range configuredScopes {
-			if cur, ok := tc.Scopes[s].(string); ok {
-				glog.V(2).Infof("Found configured scope %s", cur)
-				scopesFromToken = append(scopesFromToken, cur)
+			if cur, ok := tc.Scopes[s]; ok {
+				glog.V(2).Infof("Found configured scope %s", s)
+				scopesFromToken = append(scopesFromToken, s)
 				ctx.Set(s, cur) // set value from token of configured scope to the context, which you can use in your application.
 			}
 		}
@@ -150,9 +150,9 @@ func ScopeAndCheck(name string, scopes ...string) func(tc *ginoauth2.TokenContai
 	return func(tc *ginoauth2.TokenContainer, ctx *gin.Context) bool {
 		scopesFromToken := make([]string, 0)
 		for _, s := range configuredScopes {
-			if cur, ok := tc.Scopes[s].(string); ok {
-				glog.V(2).Infof("Found configured scope %s", cur)
-				scopesFromToken = append(scopesFromToken, cur)
+			if cur, ok := tc.Scopes[s]; ok {
+				glog.V(2).Infof("Found configured scope %s", s)
+				scopesFromToken = append(scopesFromToken, s)
 				ctx.Set(s, cur) // set value from token of configured scope to the context, which you can use in your application.
 			} else {
 				return false
