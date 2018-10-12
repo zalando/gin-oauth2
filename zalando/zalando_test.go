@@ -4,9 +4,14 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"net/http/httptest"
 	"os"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
+
+	"github.com/gin-gonic/gin"
 
 	"github.com/zalando/gin-oauth2"
 	"golang.org/x/oauth2"
@@ -60,4 +65,67 @@ func TestRequestTeamInfo(t *testing.T) {
 		t.FailNow()
 	}
 	fmt.Printf("%+v\n", data)
+}
+
+func TestScopeCheck(t *testing.T) {
+	// given
+	tc := &ginoauth2.TokenContainer{
+		Token: &oauth2.Token{
+			AccessToken:  "sdgergSgadGSAHBSHsagsdv.",
+			TokenType:    "Bearer",
+			RefreshToken: "",
+		},
+		Scopes: map[string]interface{}{
+			"my-scope-1": true,
+			"my-scope-2": true,
+			"uid":        "stups_marilyn-updater",
+		},
+		GrantType: "password",
+		Realm:     "/services",
+	}
+	ctx, _ := gin.CreateTestContext(httptest.NewRecorder())
+
+	// when
+	checkFn := ScopeCheck("name", "my-scope-1")
+	result := checkFn(tc, ctx)
+
+	// then
+	assert.True(t, result)
+
+	scopeVal, scopeOk := ctx.Get("my-scope-1")
+	assert.True(t, scopeOk)
+	assert.Equal(t, true, scopeVal)
+}
+
+func TestScopeAndCheck(t *testing.T) {
+	// given
+	tc := &ginoauth2.TokenContainer{
+		Token: &oauth2.Token{
+			AccessToken:  "sdgergSgadGSAHBSHsagsdv.",
+			TokenType:    "Bearer",
+			RefreshToken: "",
+		},
+		Scopes: map[string]interface{}{
+			"my-scope-1": true,
+			"my-scope-2": true,
+			"uid":        "stups_marilyn-updater",
+		},
+		GrantType: "password",
+		Realm:     "/services",
+	}
+	ctx, _ := gin.CreateTestContext(httptest.NewRecorder())
+
+	// when
+	checkFn := ScopeAndCheck("name", "uid", "my-scope-2")
+	result := checkFn(tc, ctx)
+
+	// then
+	assert.True(t, result)
+
+	uidVal, uidOk := ctx.Get("uid")
+	scopeVal, scopeOk := ctx.Get("my-scope-2")
+	assert.True(t, uidOk)
+	assert.Equal(t, "stups_marilyn-updater", uidVal)
+	assert.True(t, scopeOk)
+	assert.Equal(t, true, scopeVal)
 }
