@@ -95,6 +95,10 @@ func TestScopeCheck(t *testing.T) {
 	scopeVal, scopeOk := ctx.Get("my-scope-1")
 	assert.True(t, scopeOk)
 	assert.Equal(t, true, scopeVal)
+
+	uid, uidOk := ctx.Get("uid")
+	assert.True(t, uidOk)
+	assert.Equal(t, "stups_marilyn-updater", uid)
 }
 
 func TestScopeAndCheck(t *testing.T) {
