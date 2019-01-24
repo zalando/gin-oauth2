@@ -137,6 +137,10 @@ func ScopeCheck(name string, scopes ...string) func(tc *ginoauth2.TokenContainer
 				ctx.Set(s, cur) // set value from token of configured scope to the context, which you can use in your application.
 			}
 		}
+		//Getting the uid for identification of the service calling
+		if cur, ok := tc.Scopes["uid"]; ok {
+			ctx.Set("uid", cur)
+		}
 		return len(scopesFromToken) > 0
 	}
 }
@@ -157,6 +161,10 @@ func ScopeAndCheck(name string, scopes ...string) func(tc *ginoauth2.TokenContai
 			} else {
 				return false
 			}
+		}
+		//Getting the uid for identification of the service calling
+		if cur, ok := tc.Scopes["uid"]; ok {
+			ctx.Set("uid", cur)
 		}
 		return true
 	}
