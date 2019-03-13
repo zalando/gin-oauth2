@@ -32,7 +32,7 @@ Gin-OAuth2 is expressive, flexible, and very easy to use. It allows you to:
 If you're just starting out with OAuth2, you might find these
 resources useful:
 
-- [OAuth 2 Simplified](https://www.digitalocean.com/community/tutorials/an-introduction-to-oauth-2)
+- [OAuth 2 Simplified](https://aaronparecki.com/oauth-2-simplified/)
 - [An Introduction to OAuth 2](https://www.digitalocean.com/community/tutorials/an-introduction-to-oauth-2)
 
 ## Requirements
