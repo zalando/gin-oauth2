@@ -10,6 +10,7 @@ import (
 	"encoding/gob"
 	"encoding/json"
 	"fmt"
+
 	"net/http"
 	"os"
 
@@ -44,6 +45,8 @@ func init() {
 	gob.Register(goauth.Userinfo{})
 }
 
+var loginURL string
+
 func randToken() string {
 	b := make([]byte, 32)
 	if _, err := rand.Read(b); err != nil {
@@ -75,8 +78,9 @@ func Setup(redirectURL, credFile string, scopes []string, secret []byte) {
 }
 
 // Setup the authorization path without a config file
-func SetupFromString(redirectURL, clientID string, clientSecret string, scopes []string, secret []byte) {
-	store = sessions.NewCookieStore(secret)
+func SetupFromString(redirectURL, cLoginURL string, clientID string, clientSecret string, scopes []string, secret []byte) {
+	store = cookie.NewStore(secret)
+	loginURL = cLoginURL
 
 	conf = &oauth2.Config{
 		ClientID:     clientID,
@@ -116,26 +120,26 @@ func GetLoginURL(state string) string {
 // Auth is the google authorization middleware. You can use them to protect a routergroup.
 // Example:
 //
-//        private.Use(google.Auth())
-//        private.GET("/", UserInfoHandler)
-//        private.GET("/api", func(ctx *gin.Context) {
-//            ctx.JSON(200, gin.H{"message": "Hello from private for groups"})
-//        })
+//	       private.Use(google.Auth())
+//	       private.GET("/", UserInfoHandler)
+//	       private.GET("/api", func(ctx *gin.Context) {
+//	           ctx.JSON(200, gin.H{"message": "Hello from private for groups"})
+//	       })
 //
-//    // Requires google oauth pkg to be imported as `goauth "google.golang.org/api/oauth2/v2"`
-//    func UserInfoHandler(ctx *gin.Context) {
-// 	      var (
-// 	      	res goauth.Userinfo
-// 	      	ok  bool
-// 	      )
+//	   // Requires google oauth pkg to be imported as `goauth "google.golang.org/api/oauth2/v2"`
+//	   func UserInfoHandler(ctx *gin.Context) {
+//		      var (
+//		      	res goauth.Userinfo
+//		      	ok  bool
+//		      )
 //
-// 	      val := ctx.MustGet("user")
-// 	      if res, ok = val.(goauth.Userinfo); !ok {
-// 	      	res = goauth.Userinfo{Name: "no user"}
-// 	      }
+//		      val := ctx.MustGet("user")
+//		      if res, ok = val.(goauth.Userinfo); !ok {
+//		      	res = goauth.Userinfo{Name: "no user"}
+//		      }
 //
-// 	      ctx.JSON(http.StatusOK, gin.H{"Hello": "from private", "user": res.Email})
-//    }
+//		      ctx.JSON(http.StatusOK, gin.H{"Hello": "from private", "user": res.Email})
+//	   }
 func Auth() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		// Handle the exchange code to initiate a transport.
@@ -150,7 +154,11 @@ func Auth() gin.HandlerFunc {
 
 		retrievedState := session.Get(stateKey)
 		if retrievedState != ctx.Query(stateKey) {
-			ctx.AbortWithError(http.StatusUnauthorized, fmt.Errorf("invalid session state: %s", retrievedState))
+			if loginURL != "" {
+				ctx.Redirect(302, loginURL)
+			} else {
+				ctx.AbortWithError(http.StatusUnauthorized, fmt.Errorf("invalid session state: %s", retrievedState))
+			}
 			return
 		}
 
