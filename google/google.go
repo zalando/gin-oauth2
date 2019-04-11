@@ -7,7 +7,7 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"encoding/json"
-	"fmt"
+	//"fmt"
 	"io/ioutil"
 	"net/http"
 
@@ -44,6 +44,8 @@ var conf *oauth2.Config
 var state string
 var store sessions.CookieStore
 
+var loginURL string
+
 func randToken() string {
 	b := make([]byte, 32)
 	rand.Read(b)
@@ -51,8 +53,9 @@ func randToken() string {
 }
 
 // Setup the authorization path
-func Setup(redirectURL, credFile string, scopes []string, secret []byte) {
+func Setup(redirectURL, cLoginURL string, credFile string, scopes []string, secret []byte) {
 	store = sessions.NewCookieStore(secret)
+        loginURL = cLoginURL
 	var c Credentials
 	file, err := ioutil.ReadFile(credFile)
 	if err != nil {
@@ -70,8 +73,9 @@ func Setup(redirectURL, credFile string, scopes []string, secret []byte) {
 }
 
 // Setup the authorization path without a config file
-func SetupFromString(redirectURL, clientID string, clientSecret string, scopes []string, secret []byte) {
+func SetupFromString(redirectURL, cLoginURL string, clientID string, clientSecret string, scopes []string, secret []byte) {
 	store = sessions.NewCookieStore(secret)
+        loginURL = cLoginURL
 
 	conf = &oauth2.Config{
 		ClientID:     clientID,
@@ -115,7 +119,8 @@ func Auth() gin.HandlerFunc {
 		session := sessions.Default(ctx)
 		retrievedState := session.Get("state")
 		if retrievedState != ctx.Query("state") {
-			ctx.AbortWithError(http.StatusUnauthorized, fmt.Errorf("Invalid session state: %s", retrievedState))
+                        ctx.Redirect(302, loginURL)
+			//ctx.AbortWithError(http.StatusUnauthorized, fmt.Errorf("Invalid session state: %s", retrievedState))
 			return
 		}
 
