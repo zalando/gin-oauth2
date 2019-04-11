@@ -74,6 +74,19 @@ func Setup(redirectURL, credFile string, scopes []string, secret []byte) {
 	}
 }
 
+// Setup the authorization path without a config file
+func SetupFromString(redirectURL, clientID string, clientSecret string, scopes []string, secret []byte) {
+	store = sessions.NewCookieStore(secret)
+
+	conf = &oauth2.Config{
+		ClientID:     clientID,
+		ClientSecret: clientSecret,
+		RedirectURL:  redirectURL,
+		Scopes:       scopes,
+		Endpoint:     google.Endpoint,
+	}
+}
+
 func Session(name string) gin.HandlerFunc {
 	return sessions.Sessions(name, store)
 }
