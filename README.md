@@ -268,7 +268,7 @@ With a publicly accessible login resource in place, we can protect a private rou
 
 	// protected url group
 	private := router.Group("/auth")
-	private.Use(google.Auth())
+	private.Use(github.Auth())
 	private.GET("/", UserInfoHandler)
 	private.GET("/api", func(ctx *gin.Context) {
 		ctx.JSON(200, gin.H{"message": "Hello from private for groups"})
