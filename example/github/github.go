@@ -53,5 +53,17 @@ func main() {
 }
 
 func UserInfoHandler(ctx *gin.Context) {
-	ctx.JSON(http.StatusOK, gin.H{"Hello": "from private", "user": ctx.MustGet("user")})
+	var (
+		res github.AuthUser
+		val interface{}
+		ok  bool
+	)
+
+	val = ctx.MustGet("user")
+	if res, ok = val.(github.AuthUser); !ok {
+		res = github.AuthUser{
+			Name: "no User",
+		}
+	}
+	ctx.JSON(http.StatusOK, gin.H{"Hello": "from private", "user": res})
 }
