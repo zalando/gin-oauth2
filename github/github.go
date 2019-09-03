@@ -5,6 +5,7 @@ package github
 import (
 	"crypto/rand"
 	"encoding/base64"
+	"encoding/gob"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -34,7 +35,9 @@ var (
 
 func randToken() string {
 	b := make([]byte, 32)
-	rand.Read(b)
+	if _, err := rand.Read(b); err != nil {
+		glog.Fatalf("[Gin-OAuth] Failed to read rand: %v\n", err)
+	}
 	return base64.StdEncoding.EncodeToString(b)
 }
 
@@ -45,7 +48,10 @@ func Setup(redirectURL, credFile string, scopes []string, secret []byte) {
 	if err != nil {
 		glog.Fatalf("[Gin-OAuth] File error: %v\n", err)
 	}
-	json.Unmarshal(file, &c)
+	err = json.Unmarshal(file, &c)
+	if err != nil {
+		glog.Fatalf("[Gin-OAuth] Failed to unmarshal client credentials: %v\n", err)
+	}
 	conf = &oauth2.Config{
 		ClientID:     c.ClientID,
 		ClientSecret: c.ClientSecret,
@@ -71,28 +77,66 @@ func GetLoginURL(state string) string {
 	return conf.AuthCodeURL(state)
 }
 
+type AuthUser struct {
+	Login   string `json:"login"`
+	Name    string `json:"name"`
+	Email   string `json:"email"`
+	Company string `json:"company"`
+	URL     string `json:"url"`
+}
+
+func init() {
+	gob.Register(AuthUser{})
+}
+
 func Auth() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
+		var (
+			ok       bool
+			authUser AuthUser
+			user     *github.User
+		)
+
 		// Handle the exchange code to initiate a transport.
 		session := sessions.Default(ctx)
+		mysession := session.Get("ginoauthgh")
+		if authUser, ok = mysession.(AuthUser); ok {
+			ctx.Set("user", authUser)
+			ctx.Next()
+			return
+		}
+
 		retrievedState := session.Get("state")
 		if retrievedState != ctx.Query("state") {
 			ctx.AbortWithError(http.StatusUnauthorized, fmt.Errorf("Invalid session state: %s", retrievedState))
 			return
 		}
 
+		// TODO: oauth2.NoContext -> context.Context from stdlib
 		tok, err := conf.Exchange(oauth2.NoContext, ctx.Query("code"))
 		if err != nil {
-			ctx.AbortWithError(http.StatusBadRequest, err)
+			ctx.AbortWithError(http.StatusBadRequest, fmt.Errorf("Failed to do exchange: %v", err))
 			return
 		}
 		client := github.NewClient(conf.Client(oauth2.NoContext, tok))
-		user, _, err := client.Users.Get(oauth2.NoContext, "")
+		user, _, err = client.Users.Get(oauth2.NoContext, "")
 		if err != nil {
-			ctx.AbortWithError(http.StatusBadRequest, err)
+			ctx.AbortWithError(http.StatusBadRequest, fmt.Errorf("Failed to get user: %v", err))
 			return
 		}
+
 		// save userinfo, which could be used in Handlers
-		ctx.Set("user", user)
+		authUser = AuthUser{
+			Login: *user.Login,
+			Name:  *user.Name,
+			URL:   *user.URL,
+		}
+		ctx.Set("user", authUser)
+
+		// populate cookie
+		session.Set("ginoauthgh", authUser)
+		if err := session.Save(); err != nil {
+			glog.Errorf("Failed to save session: %v", err)
+		}
 	}
 }
