@@ -223,7 +223,7 @@ func (t *TokenContainer) Valid() bool {
 //      var acl []ginoauth2.AccessTuple = []ginoauth2.AccessTuple{{"employee", 1070, "sszuecs"}, {"employee", 1114, "njuettner"}}
 //      router := gin.Default()
 //	private := router.Group("")
-//	private.Use(ginoauth2.Auth(ginoatuh2.UidCheck, ginoauth2.endpoints))
+//	private.Use(ginoauth2.Auth(ginoauth2.UidCheck, ginoauth2.endpoints))
 //	private.GET("/api/private", func(c *gin.Context) {
 //		c.JSON(200, gin.H{"message": "Hello from private"})
 //	})
