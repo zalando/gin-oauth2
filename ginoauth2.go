@@ -57,7 +57,6 @@ import (
 	"errors"
 	"io/ioutil"
 	"net/http"
-	"net/url"
 	"strings"
 	"time"
 
@@ -87,6 +86,10 @@ type TokenContainer struct {
 // access.
 type AccessCheckFunction func(tc *TokenContainer, ctx *gin.Context) bool
 
+// AccessCheckFunctionNetHTTP is a function that checks if a given token grants
+// access.
+type AccessCheckFunctionNetHTTP func(tc *TokenContainer, w http.ResponseWriter, r *http.Request) bool
+
 func extractToken(r *http.Request) (*oauth2.Token, error) {
 	hdr := r.Header.Get("Authorization")
 	if hdr == "" {
@@ -102,15 +105,12 @@ func extractToken(r *http.Request) (*oauth2.Token, error) {
 }
 
 func RequestAuthInfo(t *oauth2.Token) ([]byte, error) {
-	var uv = make(url.Values)
-	// uv.Set("realm", o.Realm)
-	uv.Set("access_token", t.AccessToken)
-	infoURL := AuthInfoURL + "?" + uv.Encode()
 	client := &http.Client{Transport: &Transport}
-	req, err := http.NewRequest("GET", infoURL, nil)
+	req, err := http.NewRequest("GET", AuthInfoURL, nil)
 	if err != nil {
 		return nil, err
 	}
+	req.Header.Add("Authorization", "Bearer "+t.AccessToken)
 
 	resp, err := client.Do(req)
 	if err != nil {
@@ -171,21 +171,21 @@ func GetTokenContainer(token *oauth2.Token) (*TokenContainer, error) {
 		glog.Errorf("[Gin-OAuth] JSON.Unmarshal failed caused by: %s", err)
 		return nil, err
 	}
-	if _, ok := data["error_description"]; ok {
+	if ed, ok := data["error_description"]; ok {
 		var s string
-		s = data["error_description"].(string)
+		s = ed.(string)
 		glog.Errorf("[Gin-OAuth] RequestAuthInfo returned an error: %s", s)
 		return nil, errors.New(s)
 	}
 	return ParseTokenContainer(token, data)
 }
 
-func getTokenContainer(ctx *gin.Context) (*TokenContainer, bool) {
+func getTokenContainer(r *http.Request) (*TokenContainer, bool) {
 	var oauthToken *oauth2.Token
 	var tc *TokenContainer
 	var err error
 
-	if oauthToken, err = extractToken(ctx.Request); err != nil {
+	if oauthToken, err = extractToken(r); err != nil {
 		glog.Errorf("[Gin-OAuth] Can not extract oauth2.Token, caused by: %s", err)
 		return nil, false
 	}
@@ -232,6 +232,11 @@ func Auth(accessCheckFunction AccessCheckFunction, endpoints oauth2.Endpoint) gi
 	return AuthChain(endpoints, accessCheckFunction)
 }
 
+// AuthNetHTTP is the net/http version of Auth
+func AuthNetHTTP(accessCheckFunction AccessCheckFunctionNetHTTP, endpoints oauth2.Endpoint) func(http.Handler) http.Handler {
+	return AuthChainNetHTTP(endpoints, accessCheckFunction)
+}
+
 // AuthChain is a router middleware that can be used to get an authenticated
 // and authorized service for the whole router group. Similar to Auth, but
 // takes a chain of AccessCheckFunctions and only fails if all of them fails.
@@ -262,7 +267,7 @@ func AuthChain(endpoints oauth2.Endpoint, accessCheckFunctions ...AccessCheckFun
 		varianceControl := make(chan bool, 1)
 
 		go func() {
-			tokenContainer, ok := getTokenContainer(ctx)
+			tokenContainer, ok := getTokenContainer(ctx.Request)
 			if !ok {
 				// set LOCATION header to auth endpoint such that the user can easily get a new access-token
 				ctx.Writer.Header().Set("Location", endpoints.AuthURL)
@@ -309,6 +314,70 @@ func AuthChain(endpoints oauth2.Endpoint, accessCheckFunctions ...AccessCheckFun
 	}
 }
 
+// AuthChainNetHTTP is the net/http version of AuthChain
+func AuthChainNetHTTP(endpoints oauth2.Endpoint, accessCheckFunctions ...AccessCheckFunctionNetHTTP) func(http.Handler) http.Handler {
+	// init
+	AuthInfoURL = endpoints.TokenURL
+	// middleware
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+			t := time.Now()
+			varianceControl := make(chan bool, 1)
+
+			go func() {
+				tokenContainer, ok := getTokenContainer(request)
+				if !ok {
+					// set LOCATION header to auth endpoint such that the user can easily get a new access-token
+					writer.Header().Set("Location", endpoints.AuthURL)
+					writer.WriteHeader(http.StatusUnauthorized)
+					writer.Write([]byte("No token in context"))
+					varianceControl <- false
+					return
+				}
+
+				if !tokenContainer.Valid() {
+					// set LOCATION header to auth endpoint such that the user can easily get a new access-token
+					writer.Header().Set("Location", endpoints.AuthURL)
+					writer.WriteHeader(http.StatusUnauthorized)
+					writer.Write([]byte("Invalid Token"))
+					varianceControl <- false
+					return
+				}
+
+				for i, fn := range accessCheckFunctions {
+					if fn(tokenContainer, writer, request) {
+						varianceControl <- true
+						break
+					}
+
+					if len(accessCheckFunctions)-1 == i {
+						writer.WriteHeader(http.StatusForbidden)
+						writer.Write([]byte("Access to the Resource is fobidden"))
+						varianceControl <- false
+						return
+					}
+				}
+			}()
+
+			select {
+			case ok := <-varianceControl:
+				if !ok {
+					glog.V(2).Infof("[Gin-OAuth] %12v %s access not allowed", time.Since(t), request.URL.Path)
+					return
+				}
+			case <-time.After(VarianceTimer):
+				writer.WriteHeader(http.StatusGatewayTimeout)
+				writer.Write([]byte("Authorization check overtime"))
+				glog.V(2).Infof("[Gin-OAuth] %12v %s overtime", time.Since(t), request.URL.Path)
+				return
+			}
+
+			glog.V(2).Infof("[Gin-OAuth] %12v %s access allowed", time.Since(t), request.URL.Path)
+			next.ServeHTTP(writer, request)
+		})
+	}
+}
+
 // RequestLogger is a middleware that logs all the request and prints
 // relevant information.  This can be used for logging all the
 // requests that contain important information and are authorized.
@@ -333,18 +402,39 @@ func RequestLogger(keys []string, contentKey string) gin.HandlerFunc {
 		c.Next()
 		err := c.Errors
 		if request.Method != "GET" && err == nil {
-			data, e := c.Get(contentKey)
-			if e != false { //key is non existent
+			if data, ok := c.Get(contentKey); ok {
 				values := make([]string, 0)
 				for _, key := range keys {
-					val, keyPresent := c.Get(key)
-					if keyPresent {
+					if val, ok := c.Get(key); ok {
 						values = append(values, val.(string))
 					}
 				}
 				glog.Infof("[Gin-OAuth] Request: %+v for %s", data, strings.Join(values, "-"))
 			}
 		}
+	}
+}
+
+// RequestLoggerNetHTTP is the net/http version of RequestLogger.
+func RequestLoggerNetHTTP(keys []string, contentKey string) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			ctx := r.Context()
+			request := r
+			next.ServeHTTP(w, r.WithContext(ctx))
+			if request.Method != "GET" {
+				if data, ok := ctx.Value(contentKey).(string); ok {
+					values := make([]string, 0)
+					for _, key := range keys {
+						s, ok := ctx.Value(key).(string)
+						if ok {
+							values = append(values, s)
+						}
+					}
+					glog.Infof("[Gin-OAuth] Request: %+v for %s", data, strings.Join(values, "-"))
+				}
+			}
+		})
 	}
 }
 

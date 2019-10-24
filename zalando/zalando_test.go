@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"net/http/httptest"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
@@ -32,15 +33,15 @@ func getToken() (string, error) {
 	if err != nil {
 		return "reading failed", err
 	}
-	return string(data), nil
+	s := string(data)
+	return strings.TrimSpace(s), nil
 }
 
 func TestRequestTeamInfo(t *testing.T) {
 	ginoauth2.AuthInfoURL = OAuth2Endpoint.TokenURL
 	accessToken, err := getToken()
 	if err != nil {
-		fmt.Printf("ERR: Could not get Access Token from file, caused by %q.", accessToken)
-		t.FailNow()
+		t.Fatalf("ERR: Could not get Access Token from file %q: %v", accessToken, err)
 	}
 
 	token := oauth2.Token{
@@ -50,19 +51,16 @@ func TestRequestTeamInfo(t *testing.T) {
 	}
 	tc, err := ginoauth2.GetTokenContainer(&token)
 	if err != nil {
-		fmt.Printf("ERR: Could not get TokenContainer from ginoauth2.")
-		t.FailNow()
+		t.Fatalf("ERR: Could not get TokenContainer from ginoauth2: %v", err)
 	}
 	resp, err := RequestTeamInfo(tc, TeamAPI)
 	if err != nil {
-		fmt.Printf("ERR: Could not get TeamInfo for TokenContainer from TeamAPI.")
-		t.FailNow()
+		t.Fatalf("ERR: Could not get TeamInfo for TokenContainer from TeamAPI: %v", err)
 	}
 	var data []TeamInfo
 	err = json.Unmarshal(resp, &data)
 	if err != nil {
-		fmt.Printf("ERR: Could not unmarshal json data.")
-		t.FailNow()
+		t.Fatalf("ERR: Could not unmarshal json data: %v", err)
 	}
 	fmt.Printf("%+v\n", data)
 }
