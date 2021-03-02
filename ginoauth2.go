@@ -109,11 +109,11 @@ func extractToken(r *http.Request) (*oauth2.Token, error) {
 func requestAuthInfo(o Options, t *oauth2.Token) ([]byte, error) {
 	var infoURL string
 	if o.AccessTokenInHeader {
+		infoURL = AuthInfoURL
+	} else {
 		var uv = make(url.Values)
 		uv.Set("access_token", t.AccessToken)
 		infoURL = AuthInfoURL + "?" + uv.Encode()
-	} else {
-		infoURL = AuthInfoURL
 	}
 
 	client := &http.Client{Transport: &Transport}
