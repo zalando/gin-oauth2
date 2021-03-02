@@ -55,9 +55,11 @@ package ginoauth2
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"regexp"
 	"strings"
 	"time"
 
@@ -90,6 +92,34 @@ type AccessCheckFunction func(tc *TokenContainer, ctx *gin.Context) bool
 type Options struct {
 	Endpoint oauth2.Endpoint
 	AccessTokenInHeader bool
+}
+
+var accessTokenMask = regexp.MustCompile("[?&]access_token=[^&]+")
+
+func maskAccessToken(a interface{}) string {
+	s := fmt.Sprint(a)
+	s = accessTokenMask.ReplaceAllString(s, "<MASK>")
+	return s
+}
+
+func logf(l func(string, ...interface{}), f string, args ...interface{}) {
+	for i := range args {
+		args[i] = maskAccessToken(args[i])
+	}
+
+	l(f, args...)
+}
+
+func errorf(f string, args ...interface{}) {
+	logf(glog.Errorf, f, args...)
+}
+
+func infof(f string, args ...interface{}) {
+	logf(glog.Infof, f, args...)
+}
+
+func infofv2(f string, args ...interface{}) {
+	logf(glog.V(2).Infof, f, args...)
 }
 
 func extractToken(r *http.Request) (*oauth2.Token, error) {
@@ -179,20 +209,20 @@ func ParseTokenContainer(t *oauth2.Token, data map[string]interface{}) (*TokenCo
 func getTokenContainerForToken(o Options, token *oauth2.Token) (*TokenContainer, error) {
 	body, err := requestAuthInfo(o, token)
 	if err != nil {
-		glog.Errorf("[Gin-OAuth] RequestAuthInfo failed caused by: %s", err)
+		errorf("[Gin-OAuth] RequestAuthInfo failed caused by: %s", err)
 		return nil, err
 	}
 	// extract AuthInfo
 	var data map[string]interface{}
 	err = json.Unmarshal(body, &data)
 	if err != nil {
-		glog.Errorf("[Gin-OAuth] JSON.Unmarshal failed caused by: %s", err)
+		errorf("[Gin-OAuth] JSON.Unmarshal failed caused by: %s", err)
 		return nil, err
 	}
 	if _, ok := data["error_description"]; ok {
 		var s string
 		s = data["error_description"].(string)
-		glog.Errorf("[Gin-OAuth] RequestAuthInfo returned an error: %s", s)
+		errorf("[Gin-OAuth] RequestAuthInfo returned an error: %s", s)
 		return nil, errors.New(s)
 	}
 	return ParseTokenContainer(token, data)
@@ -208,16 +238,16 @@ func getTokenContainer(o Options, ctx *gin.Context) (*TokenContainer, bool) {
 	var err error
 
 	if oauthToken, err = extractToken(ctx.Request); err != nil {
-		glog.Errorf("[Gin-OAuth] Can not extract oauth2.Token, caused by: %s", err)
+		errorf("[Gin-OAuth] Can not extract oauth2.Token, caused by: %s", err)
 		return nil, false
 	}
 	if !oauthToken.Valid() {
-		glog.Infof("[Gin-OAuth] Invalid Token - nil or expired")
+		infof("[Gin-OAuth] Invalid Token - nil or expired")
 		return nil, false
 	}
 
 	if tc, err = getTokenContainerForToken(o, oauthToken); err != nil {
-		glog.Errorf("[Gin-OAuth] Can not extract TokenContainer, caused by: %s", err)
+		errorf("[Gin-OAuth] Can not extract TokenContainer, caused by: %s", err)
 		return nil, false
 	}
 
@@ -322,16 +352,16 @@ func AuthChainOptions(o Options, accessCheckFunctions ...AccessCheckFunction) gi
 		select {
 		case ok := <-varianceControl:
 			if !ok {
-				glog.V(2).Infof("[Gin-OAuth] %12v %s access not allowed", time.Since(t), ctx.Request.URL.Path)
+				infofv2("[Gin-OAuth] %12v %s access not allowed", time.Since(t), ctx.Request.URL.Path)
 				return
 			}
 		case <-time.After(VarianceTimer):
 			ctx.AbortWithError(http.StatusGatewayTimeout, errors.New("Authorization check overtime"))
-			glog.V(2).Infof("[Gin-OAuth] %12v %s overtime", time.Since(t), ctx.Request.URL.Path)
+			infofv2("[Gin-OAuth] %12v %s overtime", time.Since(t), ctx.Request.URL.Path)
 			return
 		}
 
-		glog.V(2).Infof("[Gin-OAuth] %12v %s access allowed", time.Since(t), ctx.Request.URL.Path)
+		infofv2("[Gin-OAuth] %12v %s access allowed", time.Since(t), ctx.Request.URL.Path)
 	}
 }
 
@@ -368,7 +398,7 @@ func RequestLogger(keys []string, contentKey string) gin.HandlerFunc {
 						values = append(values, val.(string))
 					}
 				}
-				glog.Infof("[Gin-OAuth] Request: %+v for %s", data, strings.Join(values, "-"))
+				infof("[Gin-OAuth] Request: %+v for %s", data, strings.Join(values, "-"))
 			}
 		}
 	}
