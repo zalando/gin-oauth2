@@ -87,6 +87,11 @@ type TokenContainer struct {
 // access.
 type AccessCheckFunction func(tc *TokenContainer, ctx *gin.Context) bool
 
+type Options struct {
+	Endpoint oauth2.Endpoint
+	AccessTokenInHeader bool
+}
+
 func extractToken(r *http.Request) (*oauth2.Token, error) {
 	hdr := r.Header.Get("Authorization")
 	if hdr == "" {
@@ -101,15 +106,24 @@ func extractToken(r *http.Request) (*oauth2.Token, error) {
 	return &oauth2.Token{AccessToken: th[1], TokenType: th[0]}, nil
 }
 
-func RequestAuthInfo(t *oauth2.Token) ([]byte, error) {
-	var uv = make(url.Values)
-	// uv.Set("realm", o.Realm)
-	uv.Set("access_token", t.AccessToken)
-	infoURL := AuthInfoURL + "?" + uv.Encode()
+func requestAuthInfo(o Options, t *oauth2.Token) ([]byte, error) {
+	var infoURL string
+	if o.AccessTokenInHeader {
+		var uv = make(url.Values)
+		uv.Set("access_token", t.AccessToken)
+		infoURL = AuthInfoURL + "?" + uv.Encode()
+	} else {
+		infoURL = AuthInfoURL
+	}
+
 	client := &http.Client{Transport: &Transport}
 	req, err := http.NewRequest("GET", infoURL, nil)
 	if err != nil {
 		return nil, err
+	}
+
+	if o.AccessTokenInHeader {
+		req.Header.Set("Authorization", "Bearer " + t.AccessToken)
 	}
 
 	resp, err := client.Do(req)
@@ -119,6 +133,10 @@ func RequestAuthInfo(t *oauth2.Token) ([]byte, error) {
 	defer resp.Body.Close()
 
 	return ioutil.ReadAll(resp.Body)
+}
+
+func RequestAuthInfo(t *oauth2.Token) ([]byte, error) {
+	return requestAuthInfo(Options{}, t)
 }
 
 func ParseTokenContainer(t *oauth2.Token, data map[string]interface{}) (*TokenContainer, error) {
@@ -158,8 +176,8 @@ func ParseTokenContainer(t *oauth2.Token, data map[string]interface{}) (*TokenCo
 	}, nil
 }
 
-func GetTokenContainer(token *oauth2.Token) (*TokenContainer, error) {
-	body, err := RequestAuthInfo(token)
+func getTokenContainerForToken(o Options, token *oauth2.Token) (*TokenContainer, error) {
+	body, err := requestAuthInfo(o, token)
 	if err != nil {
 		glog.Errorf("[Gin-OAuth] RequestAuthInfo failed caused by: %s", err)
 		return nil, err
@@ -180,7 +198,11 @@ func GetTokenContainer(token *oauth2.Token) (*TokenContainer, error) {
 	return ParseTokenContainer(token, data)
 }
 
-func getTokenContainer(ctx *gin.Context) (*TokenContainer, bool) {
+func GetTokenContainer(token *oauth2.Token) (*TokenContainer, error) {
+	return getTokenContainerForToken(Options{}, token)
+}
+
+func getTokenContainer(o Options, ctx *gin.Context) (*TokenContainer, bool) {
 	var oauthToken *oauth2.Token
 	var tc *TokenContainer
 	var err error
@@ -194,7 +216,7 @@ func getTokenContainer(ctx *gin.Context) (*TokenContainer, bool) {
 		return nil, false
 	}
 
-	if tc, err = GetTokenContainer(oauthToken); err != nil {
+	if tc, err = getTokenContainerForToken(o, oauthToken); err != nil {
 		glog.Errorf("[Gin-OAuth] Can not extract TokenContainer, caused by: %s", err)
 		return nil, false
 	}
@@ -253,19 +275,23 @@ func Auth(accessCheckFunction AccessCheckFunction, endpoints oauth2.Endpoint) gi
 //          c.JSON(200, gin.H{"message": "Hello from private"})
 //      })
 //
-func AuthChain(endpoints oauth2.Endpoint, accessCheckFunctions ...AccessCheckFunction) gin.HandlerFunc {
+func AuthChain(endpoint oauth2.Endpoint, accessCheckFunctions ...AccessCheckFunction) gin.HandlerFunc {
+	return AuthChainOptions(Options{Endpoint: endpoint}, accessCheckFunctions...)
+}
+
+func AuthChainOptions(o Options, accessCheckFunctions ...AccessCheckFunction) gin.HandlerFunc {
 	// init
-	AuthInfoURL = endpoints.TokenURL
+	AuthInfoURL = o.Endpoint.TokenURL
 	// middleware
 	return func(ctx *gin.Context) {
 		t := time.Now()
 		varianceControl := make(chan bool, 1)
 
 		go func() {
-			tokenContainer, ok := getTokenContainer(ctx)
+			tokenContainer, ok := getTokenContainer(o, ctx)
 			if !ok {
 				// set LOCATION header to auth endpoint such that the user can easily get a new access-token
-				ctx.Writer.Header().Set("Location", endpoints.AuthURL)
+				ctx.Writer.Header().Set("Location", o.Endpoint.AuthURL)
 				ctx.AbortWithError(http.StatusUnauthorized, errors.New("No token in context"))
 				varianceControl <- false
 				return
@@ -273,7 +299,7 @@ func AuthChain(endpoints oauth2.Endpoint, accessCheckFunctions ...AccessCheckFun
 
 			if !tokenContainer.Valid() {
 				// set LOCATION header to auth endpoint such that the user can easily get a new access-token
-				ctx.Writer.Header().Set("Location", endpoints.AuthURL)
+				ctx.Writer.Header().Set("Location", o.Endpoint.AuthURL)
 				ctx.AbortWithError(http.StatusUnauthorized, errors.New("Invalid Token"))
 				varianceControl <- false
 				return
