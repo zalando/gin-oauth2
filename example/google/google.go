@@ -9,6 +9,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/zalando/gin-oauth2/google"
+	goauth "google.golang.org/api/oauth2/v2"
 )
 
 var redirectURL, credFile string
@@ -54,5 +55,15 @@ func main() {
 }
 
 func UserInfoHandler(ctx *gin.Context) {
-	ctx.JSON(http.StatusOK, gin.H{"Hello": "from private", "user": ctx.MustGet("user").(google.User)})
+	var (
+		res goauth.Userinfo
+		ok  bool
+	)
+
+	val := ctx.MustGet("user")
+	if res, ok = val.(goauth.Userinfo); !ok {
+		res = goauth.Userinfo{Name: "no user"}
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"Hello": "from private", "user": res.Email})
 }
