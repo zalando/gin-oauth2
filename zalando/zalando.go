@@ -5,13 +5,13 @@ package zalando
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/url"
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang/glog"
-	"github.com/zalando/gin-oauth2"
+	ginoauth2 "github.com/zalando/gin-oauth2"
 	"golang.org/x/oauth2"
 )
 
@@ -63,7 +63,7 @@ func RequestTeamInfo(tc *ginoauth2.TokenContainer, uri string) ([]byte, error) {
 	}
 	defer resp.Body.Close()
 
-	return ioutil.ReadAll(resp.Body)
+	return io.ReadAll(resp.Body)
 }
 
 // GroupCheck is an authorization function that checks, if the Token

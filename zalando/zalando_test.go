@@ -3,9 +3,10 @@ package zalando
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http/httptest"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
@@ -13,7 +14,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"github.com/zalando/gin-oauth2"
+	ginoauth2 "github.com/zalando/gin-oauth2"
 	"golang.org/x/oauth2"
 )
 
@@ -28,18 +29,18 @@ func getToken() (string, error) {
 	}
 	defer file.Close()
 
-	data, err := ioutil.ReadAll(file)
+	data, err := io.ReadAll(file)
 	if err != nil {
 		return "reading failed", err
 	}
-	return string(data), nil
+	return strings.TrimSpace(string(data)), nil
 }
 
 func TestRequestTeamInfo(t *testing.T) {
 	ginoauth2.AuthInfoURL = OAuth2Endpoint.TokenURL
 	accessToken, err := getToken()
 	if err != nil {
-		fmt.Printf("ERR: Could not get Access Token from file, caused by %q.", accessToken)
+		t.Errorf("ERR: Could not get Access Token from file, caused by %q: %v", accessToken, err)
 		t.FailNow()
 	}
 
@@ -50,18 +51,18 @@ func TestRequestTeamInfo(t *testing.T) {
 	}
 	tc, err := ginoauth2.GetTokenContainer(&token)
 	if err != nil {
-		fmt.Printf("ERR: Could not get TokenContainer from ginoauth2.")
+		t.Errorf("ERR: Could not get TokenContainer from ginoauth2: %v", err)
 		t.FailNow()
 	}
 	resp, err := RequestTeamInfo(tc, TeamAPI)
 	if err != nil {
-		fmt.Printf("ERR: Could not get TeamInfo for TokenContainer from TeamAPI.")
+		t.Errorf("ERR: Could not get TeamInfo for TokenContainer from TeamAPI: %v", err)
 		t.FailNow()
 	}
 	var data []TeamInfo
 	err = json.Unmarshal(resp, &data)
 	if err != nil {
-		fmt.Printf("ERR: Could not unmarshal json data.")
+		t.Errorf("ERR: Could not unmarshal json data: %v", err)
 		t.FailNow()
 	}
 	fmt.Printf("%+v\n", data)

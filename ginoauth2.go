@@ -56,7 +56,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/url"
 	"regexp"
@@ -90,7 +90,7 @@ type TokenContainer struct {
 type AccessCheckFunction func(tc *TokenContainer, ctx *gin.Context) bool
 
 type Options struct {
-	Endpoint oauth2.Endpoint
+	Endpoint            oauth2.Endpoint
 	AccessTokenInHeader bool
 }
 
@@ -153,7 +153,7 @@ func requestAuthInfo(o Options, t *oauth2.Token) ([]byte, error) {
 	}
 
 	if o.AccessTokenInHeader {
-		req.Header.Set("Authorization", "Bearer " + t.AccessToken)
+		req.Header.Set("Authorization", "Bearer "+t.AccessToken)
 	}
 
 	resp, err := client.Do(req)
@@ -162,7 +162,7 @@ func requestAuthInfo(o Options, t *oauth2.Token) ([]byte, error) {
 	}
 	defer resp.Body.Close()
 
-	return ioutil.ReadAll(resp.Body)
+	return io.ReadAll(resp.Body)
 }
 
 func RequestAuthInfo(t *oauth2.Token) ([]byte, error) {
