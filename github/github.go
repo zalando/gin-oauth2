@@ -124,13 +124,14 @@ func Auth() gin.HandlerFunc {
 			ctx.AbortWithError(http.StatusBadRequest, fmt.Errorf("Failed to get user: %v", err))
 			return
 		}
+		// Protection: fields used in userinfo might be nil-pointers
+		authUser = AuthUser{
+			Login: string_from_ptr(user.Login),
+			Name:  string_from_ptr(user.Name),
+			URL:   string_from_ptr(user.URL),
+		}
 
 		// save userinfo, which could be used in Handlers
-		authUser = AuthUser{
-			Login: *user.Login,
-			Name:  *user.Name,
-			URL:   *user.URL,
-		}
 		ctx.Set("user", authUser)
 
 		// populate cookie
@@ -139,4 +140,13 @@ func Auth() gin.HandlerFunc {
 			glog.Errorf("Failed to save session: %v", err)
 		}
 	}
+}
+
+func string_from_ptr(str_ptr *string) (res string) {
+	if str_ptr == nil {
+		res = ""
+		return res
+	}
+	res = *str_ptr
+	return res
 }
