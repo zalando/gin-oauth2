@@ -126,9 +126,9 @@ func Auth() gin.HandlerFunc {
 		}
 		// Protection: fields used in userinfo might be nil-pointers
 		authUser = AuthUser{
-			Login: string_from_ptr(user.Login),
-			Name:  string_from_ptr(user.Name),
-			URL:   string_from_ptr(user.URL),
+			Login: stringFromPointer(user.Login),
+			Name:  stringFromPointer(user.Name),
+			URL:   stringFromPointer(user.URL),
 		}
 
 		// save userinfo, which could be used in Handlers
@@ -142,11 +142,11 @@ func Auth() gin.HandlerFunc {
 	}
 }
 
-func string_from_ptr(str_ptr *string) (res string) {
-	if str_ptr == nil {
+func stringFromPointer(strPtr *string) (res string) {
+	if strPtr == nil {
 		res = ""
 		return res
 	}
-	res = *str_ptr
+	res = *strPtr
 	return res
 }
