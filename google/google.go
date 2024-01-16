@@ -116,6 +116,10 @@ func GetLoginURL(state string) string {
 	return conf.AuthCodeURL(state)
 }
 
+func WithLoginURL(url string) {
+	loginURL = url
+}
+
 // Auth is the google authorization middleware. You can use them to protect a routergroup.
 // Example:
 //

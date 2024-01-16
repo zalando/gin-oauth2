@@ -17,3 +17,13 @@ func TestSetupFromString(t *testing.T) {
 		assert.Equal(t, conf.ClientSecret, "clientsecret")
 	})
 }
+
+func TestWithLoginURL(t *testing.T) {
+	t.Run("should assign the login url", func(t *testing.T) {
+		loginURL = ""
+		url := "http://fake.fake"
+		WithLoginURL(url)
+		assert.NotEmpty(t, url)
+		assert.Equal(t, url, loginURL)
+	})
+}
