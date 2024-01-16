@@ -78,9 +78,8 @@ func Setup(redirectURL, credFile string, scopes []string, secret []byte) {
 }
 
 // Setup the authorization path without a config file
-func SetupFromString(redirectURL, cLoginURL string, clientID string, clientSecret string, scopes []string, secret []byte) {
+func SetupFromString(redirectURL, clientID string, clientSecret string, scopes []string, secret []byte) {
 	store = cookie.NewStore(secret)
-	loginURL = cLoginURL
 
 	conf = &oauth2.Config{
 		ClientID:     clientID,
