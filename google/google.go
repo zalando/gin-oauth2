@@ -77,7 +77,7 @@ func Setup(redirectURL, credFile string, scopes []string, secret []byte) {
 	}
 }
 
-// Setup the authorization path without a config file
+// SetupFromString accepts string values for ouath2 Configs
 func SetupFromString(redirectURL, clientID string, clientSecret string, scopes []string, secret []byte) {
 	store = cookie.NewStore(secret)
 
