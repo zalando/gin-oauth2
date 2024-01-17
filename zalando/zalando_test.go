@@ -40,8 +40,7 @@ func TestRequestTeamInfo(t *testing.T) {
 	ginoauth2.AuthInfoURL = OAuth2Endpoint.TokenURL
 	accessToken, err := getToken()
 	if err != nil {
-		t.Errorf("ERR: Could not get Access Token from file, caused by %q: %v", accessToken, err)
-		t.FailNow()
+		t.Skipf("ERR: Could not get Access Token from file, caused by %q: %v", accessToken, err)
 	}
 
 	token := oauth2.Token{
