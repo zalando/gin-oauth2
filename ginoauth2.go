@@ -3,53 +3,53 @@
 // webframework.
 //
 // Example:
-//     package main
-//     import (
-//     	"flag"
-//     	"time"
-//     	"github.com/gin-gonic/gin"
-//     	"github.com/golang/glog"
-//     	"github.com/szuecs/gin-glog"
-//     	"github.com/zalando/gin-oauth2"
-//     	"golang.org/x/oauth2"
-//     )
 //
-//     var OAuth2Endpoint = oauth2.Endpoint{
-//     	AuthURL:  "https://token.oauth2.corp.com/access_token",
-//     	TokenURL: "https://oauth2.corp.com/corp/oauth2/tokeninfo",
-//     }
+//	package main
+//	import (
+//		"flag"
+//		"time"
+//		"github.com/gin-gonic/gin"
+//		"github.com/golang/glog"
+//		"github.com/szuecs/gin-glog"
+//		"github.com/zalando/gin-oauth2"
+//		"golang.org/x/oauth2"
+//	)
 //
-//     func UidCheck(tc *TokenContainer, ctx *gin.Context) bool {
-//      uid := tc.Scopes["uid"].(string)
-//      if uid != "sszuecs" {
-//       return false
-//      }
-//      ctx.Set("uid", uid)
-//      return true
-//     }
+//	var OAuth2Endpoint = oauth2.Endpoint{
+//		AuthURL:  "https://token.oauth2.corp.com/access_token",
+//		TokenURL: "https://oauth2.corp.com/corp/oauth2/tokeninfo",
+//	}
 //
-//     func main() {
-//     	flag.Parse()
-//     	router := gin.New()
-//     	router.Use(ginglog.Logger(3 * time.Second))
-//     	router.Use(gin.Recovery())
+//	func UidCheck(tc *TokenContainer, ctx *gin.Context) bool {
+//	 uid := tc.Scopes["uid"].(string)
+//	 if uid != "sszuecs" {
+//	  return false
+//	 }
+//	 ctx.Set("uid", uid)
+//	 return true
+//	}
 //
-//     	ginoauth2.VarianceTimer = 300 * time.Millisecond // defaults to 30s
+//	func main() {
+//		flag.Parse()
+//		router := gin.New()
+//		router.Use(ginglog.Logger(3 * time.Second))
+//		router.Use(gin.Recovery())
 //
-//     	public := router.Group("/api")
-//     	public.GET("/", func(c *gin.Context) {
-//     		c.JSON(200, gin.H{"message": "Hello to public world"})
-//     	})
+//		ginoauth2.VarianceTimer = 300 * time.Millisecond // defaults to 30s
 //
-//     	private := router.Group("/api/private")
-//     	private.Use(ginoauth2.Auth(UidCheck, OAuth2Endpoint))
-//     	private.GET("/", func(c *gin.Context) {
-//     		c.JSON(200, gin.H{"message": "Hello from private"})
-//     	})
+//		public := router.Group("/api")
+//		public.GET("/", func(c *gin.Context) {
+//			c.JSON(200, gin.H{"message": "Hello to public world"})
+//		})
 //
-//     	glog.Info("bootstrapped application")
-//     	router.Run(":8081")
+//		private := router.Group("/api/private")
+//		private.Use(ginoauth2.Auth(UidCheck, OAuth2Endpoint))
+//		private.GET("/", func(c *gin.Context) {
+//			c.JSON(200, gin.H{"message": "Hello from private"})
+//		})
 //
+//		glog.Info("bootstrapped application")
+//		router.Run(":8081")
 package ginoauth2
 
 import (
@@ -125,12 +125,12 @@ func infofv2(f string, args ...interface{}) {
 func extractToken(r *http.Request) (*oauth2.Token, error) {
 	hdr := r.Header.Get("Authorization")
 	if hdr == "" {
-		return nil, errors.New("No authorization header")
+		return nil, errors.New("no authorization header")
 	}
 
 	th := strings.Split(hdr, " ")
 	if len(th) != 2 {
-		return nil, errors.New("Incomplete authorization header")
+		return nil, errors.New("incomplete authorization header")
 	}
 
 	return &oauth2.Token{AccessToken: th[1], TokenType: th[0]}, nil
@@ -179,10 +179,10 @@ func ParseTokenContainer(t *oauth2.Token, data map[string]interface{}) (*TokenCo
 	exp := data["expires_in"].(float64)
 	tok := data["access_token"].(string)
 	if ttype != t.TokenType {
-		return nil, errors.New("Token type mismatch")
+		return nil, errors.New("token type mismatch")
 	}
 	if tok != t.AccessToken {
-		return nil, errors.New("Mismatch between verify request and answer")
+		return nil, errors.New("mismatch between verify request and answer")
 	}
 
 	scopes := data["scope"].([]interface{})
@@ -219,9 +219,11 @@ func getTokenContainerForToken(o Options, token *oauth2.Token) (*TokenContainer,
 		errorf("[Gin-OAuth] JSON.Unmarshal failed caused by: %s", err)
 		return nil, err
 	}
-	if _, ok := data["error_description"]; ok {
-		var s string
-		s = data["error_description"].(string)
+	if si, ok := data["error_description"]; ok {
+		s, ok := si.(string)
+		if !ok {
+			s = ""
+		}
 		errorf("[Gin-OAuth] RequestAuthInfo returned an error: %s", s)
 		return nil, errors.New(s)
 	}
@@ -254,10 +256,8 @@ func getTokenContainer(o Options, ctx *gin.Context) (*TokenContainer, bool) {
 	return tc, true
 }
 
-//
-// TokenContainer
-//
-// Validates that the AccessToken within TokenContainer is not expired and not empty.
+// Valid validates that the AccessToken within TokenContainer is not
+// expired and not empty.
 func (t *TokenContainer) Valid() bool {
 	if t.Token == nil {
 		return false
@@ -265,21 +265,21 @@ func (t *TokenContainer) Valid() bool {
 	return t.Token.Valid()
 }
 
-// Router middleware that can be used to get an authenticated and authorized service for the whole router group.
+// Auth implements a router middleware that can be used to get an
+// authenticated and authorized service for the whole router group.
 // Example:
 //
-//      var endpoints oauth2.Endpoint = oauth2.Endpoint{
-//	        AuthURL:  "https://token.oauth2.corp.com/access_token",
-//	        TokenURL: "https://oauth2.corp.com/corp/oauth2/tokeninfo",
-//      }
-//      var acl []ginoauth2.AccessTuple = []ginoauth2.AccessTuple{{"employee", 1070, "sszuecs"}, {"employee", 1114, "njuettner"}}
-//      router := gin.Default()
-//	private := router.Group("")
-//	private.Use(ginoauth2.Auth(ginoauth2.UidCheck, ginoauth2.endpoints))
-//	private.GET("/api/private", func(c *gin.Context) {
-//		c.JSON(200, gin.H{"message": "Hello from private"})
-//	})
-//
+//	     var endpoints oauth2.Endpoint = oauth2.Endpoint{
+//		        AuthURL:  "https://token.oauth2.corp.com/access_token",
+//		        TokenURL: "https://oauth2.corp.com/corp/oauth2/tokeninfo",
+//	     }
+//	     var acl []ginoauth2.AccessTuple = []ginoauth2.AccessTuple{{"employee", 1070, "sszuecs"}, {"employee", 1114, "njuettner"}}
+//	     router := gin.Default()
+//		private := router.Group("")
+//		private.Use(ginoauth2.Auth(ginoauth2.UidCheck, ginoauth2.endpoints))
+//		private.GET("/api/private", func(c *gin.Context) {
+//			c.JSON(200, gin.H{"message": "Hello from private"})
+//		})
 func Auth(accessCheckFunction AccessCheckFunction, endpoints oauth2.Endpoint) gin.HandlerFunc {
 	return AuthChain(endpoints, accessCheckFunction)
 }
@@ -289,22 +289,21 @@ func Auth(accessCheckFunction AccessCheckFunction, endpoints oauth2.Endpoint) gi
 // takes a chain of AccessCheckFunctions and only fails if all of them fails.
 // Example:
 //
-//      var endpoints oauth2.Endpoint = oauth2.Endpoint{
-//	        AuthURL:  "https://token.oauth2.corp.com/access_token",
-//	        TokenURL: "https://oauth2.corp.com/corp/oauth2/tokeninfo",
-//      }
-//      var acl []ginoauth2.AccessTuple = []ginoauth2.AccessTuple{{"employee", 1070, "sszuecs"}, {"employee", 1114, "njuettner"}}
-//      router := gin.Default()
-//	    private := router.Group("")
-//      checkChain := []AccessCheckFunction{
-//          ginoauth2.UidCheck,
-//          ginoauth2.GroupCheck,
-//      }
-//      private.Use(ginoauth2.AuthChain(checkChain, ginoauth2.endpoints))
-//      private.GET("/api/private", func(c *gin.Context) {
-//          c.JSON(200, gin.H{"message": "Hello from private"})
-//      })
-//
+//	     var endpoints oauth2.Endpoint = oauth2.Endpoint{
+//		        AuthURL:  "https://token.oauth2.corp.com/access_token",
+//		        TokenURL: "https://oauth2.corp.com/corp/oauth2/tokeninfo",
+//	     }
+//	     var acl []ginoauth2.AccessTuple = []ginoauth2.AccessTuple{{"employee", 1070, "sszuecs"}, {"employee", 1114, "njuettner"}}
+//	     router := gin.Default()
+//		    private := router.Group("")
+//	     checkChain := []AccessCheckFunction{
+//	         ginoauth2.UidCheck,
+//	         ginoauth2.GroupCheck,
+//	     }
+//	     private.Use(ginoauth2.AuthChain(checkChain, ginoauth2.endpoints))
+//	     private.GET("/api/private", func(c *gin.Context) {
+//	         c.JSON(200, gin.H{"message": "Hello from private"})
+//	     })
 func AuthChain(endpoint oauth2.Endpoint, accessCheckFunctions ...AccessCheckFunction) gin.HandlerFunc {
 	return AuthChainOptions(Options{Endpoint: endpoint}, accessCheckFunctions...)
 }
@@ -322,7 +321,7 @@ func AuthChainOptions(o Options, accessCheckFunctions ...AccessCheckFunction) gi
 			if !ok {
 				// set LOCATION header to auth endpoint such that the user can easily get a new access-token
 				ctx.Writer.Header().Set("Location", o.Endpoint.AuthURL)
-				ctx.AbortWithError(http.StatusUnauthorized, errors.New("No token in context"))
+				ctx.AbortWithError(http.StatusUnauthorized, errors.New("no token in context"))
 				varianceControl <- false
 				return
 			}
@@ -330,7 +329,7 @@ func AuthChainOptions(o Options, accessCheckFunctions ...AccessCheckFunction) gi
 			if !tokenContainer.Valid() {
 				// set LOCATION header to auth endpoint such that the user can easily get a new access-token
 				ctx.Writer.Header().Set("Location", o.Endpoint.AuthURL)
-				ctx.AbortWithError(http.StatusUnauthorized, errors.New("Invalid Token"))
+				ctx.AbortWithError(http.StatusUnauthorized, errors.New("invalid Token"))
 				varianceControl <- false
 				return
 			}
@@ -342,7 +341,7 @@ func AuthChainOptions(o Options, accessCheckFunctions ...AccessCheckFunction) gi
 				}
 
 				if len(accessCheckFunctions)-1 == i {
-					ctx.AbortWithError(http.StatusForbidden, errors.New("Access to the Resource is forbidden"))
+					ctx.AbortWithError(http.StatusForbidden, errors.New("access to the Resource is forbidden"))
 					varianceControl <- false
 					return
 				}
@@ -356,7 +355,7 @@ func AuthChainOptions(o Options, accessCheckFunctions ...AccessCheckFunction) gi
 				return
 			}
 		case <-time.After(VarianceTimer):
-			ctx.AbortWithError(http.StatusGatewayTimeout, errors.New("Authorization check overtime"))
+			ctx.AbortWithError(http.StatusGatewayTimeout, errors.New("authorization check overtime"))
 			infofv2("[Gin-OAuth] %12v %s overtime", time.Since(t), ctx.Request.URL.Path)
 			return
 		}
@@ -375,22 +374,20 @@ func AuthChainOptions(o Options, accessCheckFunctions ...AccessCheckFunction) gi
 //
 // Example:
 //
-//      var endpoints oauth2.Endpoint = oauth2.Endpoint{
-//	        AuthURL:  "https://token.oauth2.corp.com/access_token",
-//	        TokenURL: "https://oauth2.corp.com/corp/oauth2/tokeninfo",
-//      }
-//      var acl []ginoauth2.AccessTuple = []ginoauth2.AccessTuple{{"employee", 1070, "sszuecs"}, {"employee", 1114, "njuettner"}}
-//      router := gin.Default()
-//      router.Use(ginoauth2.RequestLogger([]string{"uid"}, "data"))
-//
+//	     var endpoints oauth2.Endpoint = oauth2.Endpoint{
+//		        AuthURL:  "https://token.oauth2.corp.com/access_token",
+//		        TokenURL: "https://oauth2.corp.com/corp/oauth2/tokeninfo",
+//	     }
+//	     var acl []ginoauth2.AccessTuple = []ginoauth2.AccessTuple{{"employee", 1070, "sszuecs"}, {"employee", 1114, "njuettner"}}
+//	     router := gin.Default()
+//	     router.Use(ginoauth2.RequestLogger([]string{"uid"}, "data"))
 func RequestLogger(keys []string, contentKey string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		request := c.Request
 		c.Next()
 		err := c.Errors
 		if request.Method != "GET" && err == nil {
-			data, e := c.Get(contentKey)
-			if e != false { //key is non existent
+			if data, ok := c.Get(contentKey); !ok {
 				values := make([]string, 0)
 				for _, key := range keys {
 					val, keyPresent := c.Get(key)

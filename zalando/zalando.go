@@ -21,14 +21,18 @@ var AccessTuples []AccessTuple
 // AccessTuple is the type defined for use in AccessTuples.
 type AccessTuple struct {
 	Realm string `yaml:"realm,omitempty"` // p.e. "employees", "services"
-	Uid   string `yaml:"uid,omitempty"`   // UnixName
-	Cn    string `yaml:"cn,omitempty"`    // RealName
+	//lint:ignore ST1003 public interface
+	Uid string `yaml:"uid,omitempty"` // UnixName
+	Cn  string `yaml:"cn,omitempty"`  // RealName
 }
 
 // TeamInfo is defined like in TeamAPI json.
 type TeamInfo struct {
-	Id      string
+	//lint:ignore ST1003 public interface
+	Id string
+	//lint:ignore ST1003 public interface
 	Id_name string
+	//lint:ignore ST1003 public interface
 	Team_id string
 	Type    string
 	Name    string
@@ -49,9 +53,9 @@ var TeamAPI string = "https://teams.auth.zalando.com/api/teams"
 func RequestTeamInfo(tc *ginoauth2.TokenContainer, uri string) ([]byte, error) {
 	var uv = make(url.Values)
 	uv.Set("member", tc.Scopes["uid"].(string))
-	info_url := uri + "?" + uv.Encode()
+	infoURL := uri + "?" + uv.Encode()
 	client := &http.Client{Transport: &ginoauth2.Transport}
-	req, err := http.NewRequest("GET", info_url, nil)
+	req, err := http.NewRequest("GET", infoURL, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -105,6 +109,8 @@ func GroupCheck(at []AccessTuple) func(tc *ginoauth2.TokenContainer, ctx *gin.Co
 // UidCheck is an authorization function that checks UID scope
 // TokenContainer must be Valid. As side effect it sets "uid" and
 // "cn" in the gin.Context to the authorized uid and cn (Realname).
+//
+//lint:ignore ST1003 public interface
 func UidCheck(at []AccessTuple) func(tc *ginoauth2.TokenContainer, ctx *gin.Context) bool {
 	ats := at
 	return func(tc *ginoauth2.TokenContainer, ctx *gin.Context) bool {
@@ -152,11 +158,9 @@ func ScopeAndCheck(name string, scopes ...string) func(tc *ginoauth2.TokenContai
 	glog.Infof("ScopeCheck %s configured to grant access only if scopes: %v are present", name, scopes)
 	configuredScopes := scopes
 	return func(tc *ginoauth2.TokenContainer, ctx *gin.Context) bool {
-		scopesFromToken := make([]string, 0)
 		for _, s := range configuredScopes {
 			if cur, ok := tc.Scopes[s]; ok {
 				glog.V(2).Infof("Found configured scope %s", s)
-				scopesFromToken = append(scopesFromToken, s)
 				ctx.Set(s, cur) // set value from token of configured scope to the context, which you can use in your application.
 			} else {
 				return false
@@ -175,10 +179,15 @@ func ScopeAndCheck(name string, scopes ...string) func(tc *ginoauth2.TokenContai
 func NoAuthorization() func(tc *ginoauth2.TokenContainer, ctx *gin.Context) bool {
 	return func(tc *ginoauth2.TokenContainer, ctx *gin.Context) bool {
 		blob, err := RequestTeamInfo(tc, TeamAPI)
+		if err != nil {
+			return false
+		}
+
 		var data []TeamInfo
 		err = json.Unmarshal(blob, &data)
 		if err != nil {
 			glog.Errorf("[Gin-OAuth] JSON.Unmarshal failed, caused by: %s", err)
+			return false
 		}
 		for _, teamInfo := range data {
 			if teamInfo.Type == "official" {

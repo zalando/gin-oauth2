@@ -3,6 +3,7 @@
 package github
 
 import (
+	"context"
 	"crypto/rand"
 	"encoding/base64"
 	"encoding/gob"
@@ -28,7 +29,6 @@ type Credentials struct {
 
 var (
 	conf  *oauth2.Config
-	cred  Credentials
 	state string
 	store sessions.CookieStore
 )
@@ -108,20 +108,20 @@ func Auth() gin.HandlerFunc {
 
 		retrievedState := session.Get("state")
 		if retrievedState != ctx.Query("state") {
-			ctx.AbortWithError(http.StatusUnauthorized, fmt.Errorf("Invalid session state: %s", retrievedState))
+			ctx.AbortWithError(http.StatusUnauthorized, fmt.Errorf("invalid session state: %s", retrievedState))
 			return
 		}
 
-		// TODO: oauth2.NoContext -> context.Context from stdlib
-		tok, err := conf.Exchange(oauth2.NoContext, ctx.Query("code"))
+		stdctx := context.Background()
+		tok, err := conf.Exchange(stdctx, ctx.Query("code"))
 		if err != nil {
-			ctx.AbortWithError(http.StatusBadRequest, fmt.Errorf("Failed to do exchange: %v", err))
+			ctx.AbortWithError(http.StatusBadRequest, fmt.Errorf("failed to do exchange: %w", err))
 			return
 		}
-		client := github.NewClient(conf.Client(oauth2.NoContext, tok))
-		user, _, err = client.Users.Get(oauth2.NoContext, "")
+		client := github.NewClient(conf.Client(stdctx, tok))
+		user, _, err = client.Users.Get(stdctx, "")
 		if err != nil {
-			ctx.AbortWithError(http.StatusBadRequest, fmt.Errorf("Failed to get user: %v", err))
+			ctx.AbortWithError(http.StatusBadRequest, fmt.Errorf("failed to get user: %w", err))
 			return
 		}
 		// Protection: fields used in userinfo might be nil-pointers
