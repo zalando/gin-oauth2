@@ -8,8 +8,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang/glog"
-	"github.com/szuecs/gin-glog"
-	"github.com/zalando/gin-oauth2"
+	ginglog "github.com/szuecs/gin-glog"
+	ginoauth2 "github.com/zalando/gin-oauth2"
 	"github.com/zalando/gin-oauth2/zalando"
 )
 
@@ -57,8 +57,8 @@ func main() {
 		c.JSON(200, gin.H{"message": "Hello from private for groups and users"})
 	})
 	privateGroup.GET("/", func(c *gin.Context) {
-		uid, okUid := c.Get("uid")
-		if team, ok := c.Get("team"); ok && okUid {
+		uid, okUID := c.Get("uid")
+		if team, ok := c.Get("team"); ok && okUID {
 			c.JSON(200, gin.H{"message": fmt.Sprintf("Hello from private for groups to %s member of %s", uid, team)})
 		} else {
 			c.JSON(200, gin.H{"message": "Hello from private for groups without uid and team"})
