@@ -8,7 +8,7 @@ require (
 	github.com/gin-gonic/gin v1.9.1
 	github.com/golang/glog v1.0.0
 	github.com/google/go-github v17.0.0+incompatible
-	github.com/stretchr/testify v1.8.3
+	github.com/stretchr/testify v1.8.4
 	github.com/szuecs/gin-glog v1.1.1
 	golang.org/x/oauth2 v0.5.0
 	google.golang.org/api v0.110.0
