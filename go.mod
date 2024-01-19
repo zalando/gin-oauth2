@@ -6,7 +6,7 @@ require (
 	github.com/gin-contrib/sessions v0.0.5
 	github.com/gin-gonic/contrib v0.0.0-20221130124618-7e01895a63f2
 	github.com/gin-gonic/gin v1.9.1
-	github.com/golang/glog v1.1.2
+	github.com/golang/glog v1.2.0
 	github.com/google/go-github v17.0.0+incompatible
 	github.com/stretchr/testify v1.8.4
 	github.com/szuecs/gin-glog v1.1.1
