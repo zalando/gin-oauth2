@@ -39,7 +39,7 @@ func TestWithLoginURL(t *testing.T) {
 			isErrNil:       true,
 		},
 		{
-			description:    "should not assign an invalid url without error",
+			description:    "should not assign an invalid url, and should return an error",
 			urlParm:        "not a parseable url",
 			expectUrlLogin: "",
 			isErrNil:       false,
