@@ -10,9 +10,10 @@ import (
 	"encoding/gob"
 	"encoding/json"
 	"fmt"
-
 	"net/http"
+	"net/url"
 	"os"
+	"strings"
 
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-contrib/sessions/cookie"
@@ -116,8 +117,14 @@ func GetLoginURL(state string) string {
 	return conf.AuthCodeURL(state)
 }
 
-func WithLoginURL(url string) {
-	loginURL = url
+func WithLoginURL(s string) error {
+	s = strings.TrimSpace(s)
+	url, err := url.ParseRequestURI(s)
+	if err != nil {
+		return err
+	}
+	loginURL = url.String()
+	return nil
 }
 
 // Auth is the google authorization middleware. You can use them to protect a routergroup.

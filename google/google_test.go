@@ -19,11 +19,38 @@ func TestSetupFromString(t *testing.T) {
 }
 
 func TestWithLoginURL(t *testing.T) {
-	t.Run("should assign the login url", func(t *testing.T) {
-		loginURL = ""
-		url := "http://fake.fake"
-		WithLoginURL(url)
-		assert.NotEmpty(t, url)
-		assert.Equal(t, url, loginURL)
-	})
+
+	var testCases = []struct {
+		description    string
+		urlParm        string
+		expectUrlLogin string
+		isErrNil       bool
+	}{
+		{
+			description:    "should assign a valid url without error",
+			urlParm:        "http://fake.fake",
+			expectUrlLogin: "http://fake.fake",
+			isErrNil:       true,
+		},
+		{
+			description:    "should assign a sanitizable url without error",
+			urlParm:        " http://fake.fake   ",
+			expectUrlLogin: "http://fake.fake",
+			isErrNil:       true,
+		},
+		{
+			description:    "should not assign an invalid url without error",
+			urlParm:        "not a parseable url",
+			expectUrlLogin: "",
+			isErrNil:       false,
+		},
+	}
+	for _, testCase := range testCases {
+		t.Run(testCase.description, func(t *testing.T) {
+			loginURL = ""
+			err := WithLoginURL(testCase.urlParm)
+			assert.Equal(t, testCase.expectUrlLogin, loginURL)
+			assert.Equal(t, testCase.isErrNil, err == nil)
+		})
+	}
 }
