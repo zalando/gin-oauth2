@@ -23,25 +23,25 @@ func TestWithLoginURL(t *testing.T) {
 	var testCases = []struct {
 		description    string
 		urlParm        string
-		expectUrlLogin string
+		expectURLLogin string
 		isErrNil       bool
 	}{
 		{
 			description:    "should assign a valid url without error",
 			urlParm:        "http://fake.fake",
-			expectUrlLogin: "http://fake.fake",
+			expectURLLogin: "http://fake.fake",
 			isErrNil:       true,
 		},
 		{
 			description:    "should assign a sanitizable url without error",
 			urlParm:        " http://fake.fake   ",
-			expectUrlLogin: "http://fake.fake",
+			expectURLLogin: "http://fake.fake",
 			isErrNil:       true,
 		},
 		{
 			description:    "should not assign an invalid url, and should return an error",
 			urlParm:        "not a parseable url",
-			expectUrlLogin: "",
+			expectURLLogin: "",
 			isErrNil:       false,
 		},
 	}
@@ -49,7 +49,7 @@ func TestWithLoginURL(t *testing.T) {
 		t.Run(testCase.description, func(t *testing.T) {
 			loginURL = ""
 			err := WithLoginURL(testCase.urlParm)
-			assert.Equal(t, testCase.expectUrlLogin, loginURL)
+			assert.Equal(t, testCase.expectURLLogin, loginURL)
 			assert.Equal(t, testCase.isErrNil, err == nil)
 		})
 	}
