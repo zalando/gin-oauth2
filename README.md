@@ -1,7 +1,9 @@
 # Gin-OAuth2
 
 [![Go Report
-Card](https://goreportcard.com/badge/zalando/gin-oauth2)](https://goreportcard.com/report/zalando/gin-oauth2) [![Build Status](https://travis-ci.org/zalando/gin-oauth2.svg?branch=master)](https://travis-ci.org/zalando/gin-oauth2) [![GoDoc](https://godoc.org/github.com/zalando/gin-oauth2?status.svg)](https://godoc.org/github.com/zalando/gin-oauth2)
+Card](https://goreportcard.com/badge/zalando/gin-oauth2)](https://goreportcard.com/report/zalando/gin-oauth2)
+[![Build Status](https://github.com/zalando/gin-oauth2/actions/workflows/master.yaml/badge.svg)](https://github.com/zalando/gin-oauth2/actions/workflows/master.yaml)
+[![GoDoc](https://pkg.go.dev/github.com/zalando/gin-oauth2?status.svg)](https://pkg.go.dev/github.com/zalando/gin-oauth2)
 
 
 Gin-OAuth2 is specially made for [Gin Framework](https://github.com/gin-gonic/gin)
