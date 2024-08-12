@@ -10,7 +10,7 @@ require (
 	github.com/google/go-github v17.0.0+incompatible
 	github.com/stretchr/testify v1.9.0
 	github.com/szuecs/gin-glog v1.1.1
-	golang.org/x/oauth2 v0.20.0
+	golang.org/x/oauth2 v0.22.0
 	google.golang.org/api v0.182.0
 )
 
