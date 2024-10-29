@@ -64,7 +64,6 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/golang/glog"
 	"golang.org/x/oauth2"
 )
 
@@ -100,26 +99,6 @@ func maskAccessToken(a interface{}) string {
 	s := fmt.Sprint(a)
 	s = accessTokenMask.ReplaceAllString(s, "<MASK>")
 	return s
-}
-
-func logf(l func(string, ...interface{}), f string, args ...interface{}) {
-	for i := range args {
-		args[i] = maskAccessToken(args[i])
-	}
-
-	l(f, args...)
-}
-
-func errorf(f string, args ...interface{}) {
-	logf(glog.Errorf, f, args...)
-}
-
-func infof(f string, args ...interface{}) {
-	logf(glog.Infof, f, args...)
-}
-
-func infofv2(f string, args ...interface{}) {
-	logf(glog.V(2).Infof, f, args...)
 }
 
 func extractToken(r *http.Request) (*oauth2.Token, error) {
