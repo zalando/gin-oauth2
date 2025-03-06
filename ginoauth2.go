@@ -107,12 +107,11 @@ func extractToken(r *http.Request) (*oauth2.Token, error) {
 		return nil, errors.New("no authorization header")
 	}
 
-	th := strings.Split(hdr, " ")
-	if len(th) != 2 {
-		return nil, errors.New("incomplete authorization header")
+	typ, token, ok := strings.Cut(hdr, " ")
+	if !ok {
+		return nil, errors.New("invalid authorization header")
 	}
-
-	return &oauth2.Token{AccessToken: th[1], TokenType: th[0]}, nil
+	return &oauth2.Token{AccessToken: token, TokenType: typ}, nil
 }
 
 func requestAuthInfo(o Options, t *oauth2.Token) ([]byte, error) {
