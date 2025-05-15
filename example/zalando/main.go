@@ -14,17 +14,41 @@ import (
 )
 
 var USERS []zalando.AccessTuple = []zalando.AccessTuple{
-	{"/employees", "sszuecs", "Sandor Szücs"},
-	{"/employees", "njuettner", "Nick Jüttner"},
+	{
+		Realm: "/employees",
+		Uid: "sszuecs",
+		Cn: "Sandor Szücs",
+	},
+	{
+		Realm: "/employees",
+		Uid: "njuettner",
+		Cn: "Nick Jüttner",
+	},
 }
 
 var TEAMS []zalando.AccessTuple = []zalando.AccessTuple{
-	{"teams", "opensourceguild", "OpenSource"},
-	{"teams", "tm", "Platform Engineering / System"},
-	{"teams", "teapot", "Platform / Cloud API"},
+	{
+		Realm: "teams",
+		Uid: "opensourceguild",
+		Cn: "OpenSource",
+	},
+	{
+		Realm: "teams",
+		Uid: "tm",
+		Cn: "Platform Engineering / System",
+	},
+	{
+		Realm: "teams",
+		Uid: "teapot",
+		Cn: "Platform / Cloud API",
+	},
 }
 var SERVICES []zalando.AccessTuple = []zalando.AccessTuple{
-	{"services", "foo", "Fooservice"},
+	{
+		Realm: "services",
+		Uid: "foo",
+		Cn: "Fooservice",
+	},
 }
 
 func main() {

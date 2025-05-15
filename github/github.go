@@ -12,7 +12,8 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/gin-gonic/contrib/sessions"
+	"github.com/gin-contrib/sessions"
+	"github.com/gin-contrib/sessions/cookie"
 	"github.com/gin-gonic/gin"
 	"github.com/golang/glog"
 
@@ -30,7 +31,7 @@ type Credentials struct {
 var (
 	conf  *oauth2.Config
 	state string
-	store sessions.CookieStore
+	store sessions.Store
 )
 
 func randToken() string {
@@ -42,7 +43,7 @@ func randToken() string {
 }
 
 func Setup(redirectURL, credFile string, scopes []string, secret []byte) {
-	store = sessions.NewCookieStore(secret)
+	store = cookie.NewStore(secret)
 	var c Credentials
 	file, err := os.ReadFile(credFile)
 	if err != nil {
