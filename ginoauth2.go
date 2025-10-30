@@ -91,6 +91,7 @@ type AccessCheckFunction func(tc *TokenContainer, ctx *gin.Context) bool
 type Options struct {
 	Endpoint            oauth2.Endpoint
 	AccessTokenInHeader bool
+	Log                 Logger
 }
 
 var accessTokenMask = regexp.MustCompile("[?&]access_token=[^&]+")
@@ -289,6 +290,7 @@ func AuthChain(endpoint oauth2.Endpoint, accessCheckFunctions ...AccessCheckFunc
 func AuthChainOptions(o Options, accessCheckFunctions ...AccessCheckFunction) gin.HandlerFunc {
 	// init
 	AuthInfoURL = o.Endpoint.TokenURL
+	DefaultLogger = o.Log
 	// middleware
 	return func(ctx *gin.Context) {
 		t := time.Now()
