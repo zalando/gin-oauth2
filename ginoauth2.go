@@ -91,6 +91,7 @@ type AccessCheckFunction func(tc *TokenContainer, ctx *gin.Context) bool
 type Options struct {
 	Endpoint            oauth2.Endpoint
 	AccessTokenInHeader bool
+	Log                 Logger
 }
 
 var accessTokenMask = regexp.MustCompile("[?&]access_token=[^&]+")
@@ -273,7 +274,7 @@ func Auth(accessCheckFunction AccessCheckFunction, endpoints oauth2.Endpoint) gi
 //	     }
 //	     var acl []ginoauth2.AccessTuple = []ginoauth2.AccessTuple{{"employee", 1070, "sszuecs"}, {"employee", 1114, "njuettner"}}
 //	     router := gin.Default()
-//		    private := router.Group("")
+//	     private := router.Group("")
 //	     checkChain := []AccessCheckFunction{
 //	         ginoauth2.UidCheck,
 //	         ginoauth2.GroupCheck,
@@ -286,9 +287,11 @@ func AuthChain(endpoint oauth2.Endpoint, accessCheckFunctions ...AccessCheckFunc
 	return AuthChainOptions(Options{Endpoint: endpoint}, accessCheckFunctions...)
 }
 
+// AuthChainOptions
 func AuthChainOptions(o Options, accessCheckFunctions ...AccessCheckFunction) gin.HandlerFunc {
 	// init
 	AuthInfoURL = o.Endpoint.TokenURL
+	DefaultLogger = o.Log
 	// middleware
 	return func(ctx *gin.Context) {
 		t := time.Now()
