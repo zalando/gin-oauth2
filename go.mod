@@ -9,6 +9,7 @@ require (
 	github.com/gin-gonic/gin v1.11.0
 	github.com/golang/glog v1.2.5
 	github.com/google/go-github v17.0.0+incompatible
+	github.com/sirupsen/logrus v1.9.3
 	github.com/stretchr/testify v1.11.1
 	github.com/szuecs/gin-glog v1.1.1
 	golang.org/x/oauth2 v0.33.0
