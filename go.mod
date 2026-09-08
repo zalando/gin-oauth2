@@ -1,6 +1,6 @@
 module github.com/zalando/gin-oauth2
 
-go 1.25.8
+go 1.26.0
 
 require (
 	github.com/gin-contrib/sessions v1.1.0
@@ -10,7 +10,7 @@ require (
 	github.com/stretchr/testify v1.12.1
 	github.com/szuecs/gin-glog v1.1.1
 	golang.org/x/oauth2 v0.36.0
-	google.golang.org/api v0.294.0
+	google.golang.org/api v0.297.0
 )
 
 require (
