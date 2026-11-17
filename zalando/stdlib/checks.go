@@ -22,7 +22,7 @@ func check(values map[string]any, granted bool, r *http.Request) (*http.Request,
 // "official" team in the request context.
 func GroupCheck(at []zalando.AccessTuple) stdmw.AccessCheckFunction {
 	return func(tc *ginoauth2.TokenContainer, r *http.Request) (*http.Request, bool) {
-		values, granted := zalando.GroupCheckValues(at, tc)
+		values, granted := zalando.GroupCheckValues(r.Context(), at, tc)
 		return check(values, granted, r)
 	}
 }
@@ -64,7 +64,7 @@ func ScopeAndCheck(scopes ...string) stdmw.AccessCheckFunction {
 // without checking if the user/team is authorized.
 func NoAuthorization() stdmw.AccessCheckFunction {
 	return func(tc *ginoauth2.TokenContainer, r *http.Request) (*http.Request, bool) {
-		values, granted := zalando.NoAuthorizationValues(tc)
+		values, granted := zalando.NoAuthorizationValues(r.Context(), tc)
 		return check(values, granted, r)
 	}
 }

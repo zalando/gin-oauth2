@@ -3,6 +3,7 @@
 package zalando
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -50,12 +51,12 @@ var TeamAPI string = "https://teams.auth.zalando.com/api/teams"
 
 // RequestTeamInfo is a function that returns team information for a
 // given token.
-func RequestTeamInfo(tc *ginoauth2.TokenContainer, uri string) ([]byte, error) {
+func RequestTeamInfo(ctx context.Context, tc *ginoauth2.TokenContainer, uri string) ([]byte, error) {
 	var uv = make(url.Values)
 	uv.Set("member", tc.Scopes["uid"].(string))
 	infoURL := uri + "?" + uv.Encode()
 	client := &http.Client{Transport: &ginoauth2.Transport}
-	req, err := http.NewRequest("GET", infoURL, nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", infoURL, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -79,13 +80,13 @@ func uidOf(tc *ginoauth2.TokenContainer) (string, bool) {
 // GroupCheck. It returns the values to expose to the handler ("uid"
 // and "team" of the official team) and whether access is granted.
 // The values are returned even if access is not granted.
-func GroupCheckValues(at []AccessTuple, tc *ginoauth2.TokenContainer) (map[string]any, bool) {
+func GroupCheckValues(ctx context.Context, at []AccessTuple, tc *ginoauth2.TokenContainer) (map[string]any, bool) {
 	uid, ok := uidOf(tc)
 	if !ok {
 		glog.Errorf("[Gin-OAuth] token has no uid scope")
 		return nil, false
 	}
-	blob, err := RequestTeamInfo(tc, TeamAPI)
+	blob, err := RequestTeamInfo(ctx, tc, TeamAPI)
 	if err != nil {
 		glog.Errorf("[Gin-OAuth] failed to get team info, caused by: %s", err)
 		return nil, false
@@ -173,12 +174,12 @@ func ScopeAndCheckValues(tc *ginoauth2.TokenContainer, scopes ...string) (map[st
 // NoAuthorizationValues is the framework independent implementation
 // of NoAuthorization. It returns the values to expose to the handler
 // ("uid" and "team") and whether access is granted.
-func NoAuthorizationValues(tc *ginoauth2.TokenContainer) (map[string]any, bool) {
+func NoAuthorizationValues(ctx context.Context, tc *ginoauth2.TokenContainer) (map[string]any, bool) {
 	uid, ok := uidOf(tc)
 	if !ok {
 		return nil, false
 	}
-	blob, err := RequestTeamInfo(tc, TeamAPI)
+	blob, err := RequestTeamInfo(ctx, tc, TeamAPI)
 	if err != nil {
 		return nil, false
 	}
@@ -197,6 +198,14 @@ func NoAuthorizationValues(tc *ginoauth2.TokenContainer) (map[string]any, bool) 
 	return nil, true
 }
 
+func requestContext(ctx *gin.Context) (context.Context, context.CancelFunc) {
+	base := context.Background()
+	if ctx.Request != nil {
+		base = ctx.Request.Context()
+	}
+	return context.WithTimeout(base, ginoauth2.VarianceTimer)
+}
+
 func apply(ctx *gin.Context, values map[string]any) {
 	for k, v := range values {
 		ctx.Set(k, v)
@@ -210,7 +219,9 @@ func apply(ctx *gin.Context, values map[string]any) {
 func GroupCheck(at []AccessTuple) func(tc *ginoauth2.TokenContainer, ctx *gin.Context) bool {
 	ats := at
 	return func(tc *ginoauth2.TokenContainer, ctx *gin.Context) bool {
-		values, granted := GroupCheckValues(ats, tc)
+		reqCtx, cancel := requestContext(ctx)
+		defer cancel()
+		values, granted := GroupCheckValues(reqCtx, ats, tc)
 		apply(ctx, values)
 		return granted
 	}
@@ -260,7 +271,9 @@ func ScopeAndCheck(name string, scopes ...string) func(tc *ginoauth2.TokenContai
 // checking if the user/team is authorized.
 func NoAuthorization() func(tc *ginoauth2.TokenContainer, ctx *gin.Context) bool {
 	return func(tc *ginoauth2.TokenContainer, ctx *gin.Context) bool {
-		values, granted := NoAuthorizationValues(tc)
+		reqCtx, cancel := requestContext(ctx)
+		defer cancel()
+		values, granted := NoAuthorizationValues(reqCtx, tc)
 		apply(ctx, values)
 		return granted
 	}
