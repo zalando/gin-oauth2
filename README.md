@@ -269,6 +269,32 @@ A handler will fetch user information from the gin.Context that's stored in goog
 - In your browser, follow the login, and choose your identity to login with
 - You'll be redirected to the http://127.0.0.1:8081/auth endpoint, which should show your identity data
 
+#### Google with plain net/http
+
+`github.com/zalando/gin-oauth2/google/stdlib` provides the same sign-in for
+`net/http` handlers. There is no global state and no separate session
+middleware, a `Provider` holds the configuration and the cookie store:
+
+        import googlestd "github.com/zalando/gin-oauth2/google/stdlib"
+
+        provider, err := googlestd.NewFromFile(redirectURL, credFile, scopes, secret)
+        // or googlestd.New(googlestd.Config{...}) with ClientID, ClientSecret, SessionKey, ...
+
+        mux := http.NewServeMux()
+        mux.Handle("GET /login", provider.LoginHandler())
+        mux.Handle("GET /auth/{$}", provider.Auth()(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+                user, _ := googlestd.UserFromContext(r.Context()) // goauth.Userinfo
+                fmt.Fprintln(w, user.Email)
+        })))
+
+`Config.LoginURL` redirects unauthenticated users instead of returning 401.
+Session cookies use the same layout as the gin provider, so with the
+same secret and session name (`Config.SessionName`, default
+`ginoauth_google`) both accept each other's cookies. Cookies are
+`HttpOnly`, `SameSite=Lax` and `Secure` if the redirect URL is https.
+
+Run it with ```% go run example/google-stdlib/main.go -cred-file clientid.google.json```
+
 ### GitHub-Based Access
 
 As shown in [this blog post](https://blog.kowalczyk.info/article/f/Accessing-GitHub-API-from-Go.html) about Go and GitHub signin, you have to [register your application](https://github.com/settings/applications/new) with GitHub to get an "OAuth client ID." In your [developer applications](https://github.com/settings/developers), you will find your "Credentials":
@@ -333,6 +359,27 @@ A handler will fetch user information from the gin.Context that's stored in gith
 - open [http://127.0.0.1:8081/login](http://127.0.0.1:8081/login) in your browser
 - In your browser, follow the login, and choose your identity to login with
 - You'll be redirected to the http://127.0.0.1:8081/auth endpoint, which should show your identity data
+
+#### GitHub with plain net/http
+
+`github.com/zalando/gin-oauth2/github/stdlib` provides the same sign-in for
+`net/http` handlers:
+
+        import githubstd "github.com/zalando/gin-oauth2/github/stdlib"
+
+        provider, err := githubstd.NewFromFile(redirectURL, credFile, scopes, secret)
+
+        mux := http.NewServeMux()
+        mux.Handle("GET /login", provider.LoginHandler())
+        mux.Handle("GET /auth/{$}", provider.Auth()(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+                user, _ := githubstd.UserFromContext(r.Context()) // githubstd.AuthUser
+                fmt.Fprintln(w, user.Login)
+        })))
+
+`Config.APIBaseURL` points the user lookup to a GitHub Enterprise
+instance. The default session name is `ginoauth_github`.
+
+Run it with ```% go run example/github-stdlib/main.go -cred-file clientid.github.json```
 
 ## Contributing/TODO
 
