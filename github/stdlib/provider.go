@@ -241,7 +241,6 @@ func (p *Provider) fetchUser(ctx context.Context, tok *oauth2.Token) (AuthUser, 
 	if err != nil {
 		return AuthUser{}, err
 	}
-	// fields might be nil-pointers
 	return AuthUser{
 		Login: deref(user.Login),
 		Name:  deref(user.Name),

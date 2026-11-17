@@ -70,7 +70,6 @@ func RequestTeamInfo(tc *ginoauth2.TokenContainer, uri string) ([]byte, error) {
 	return io.ReadAll(resp.Body)
 }
 
-// uidOf returns the "uid" scope of the token.
 func uidOf(tc *ginoauth2.TokenContainer) (string, bool) {
 	uid, ok := tc.Scopes["uid"].(string)
 	return uid, ok

@@ -123,9 +123,6 @@ func authorize(ctx context.Context, o ginoauth2.Options, checks []AccessCheckFun
 	return fail(http.StatusForbidden, errors.New("access to the resource is forbidden"))
 }
 
-// detach returns out with a context that keeps all values added
-// during authorization, but is not bound to the authorization
-// timeout. Cancellation of the original request is still propagated.
 func detach(orig, out *http.Request) *http.Request {
 	return out.WithContext(&valuesContext{Context: orig.Context(), values: out.Context()})
 }
