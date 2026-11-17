@@ -53,6 +53,7 @@
 package ginoauth2
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -101,6 +102,12 @@ func maskAccessToken(a interface{}) string {
 	return s
 }
 
+// ExtractToken extracts the access token and its type from the
+// Authorization header of the request.
+func ExtractToken(r *http.Request) (*oauth2.Token, error) {
+	return extractToken(r)
+}
+
 func extractToken(r *http.Request) (*oauth2.Token, error) {
 	hdr := r.Header.Get("Authorization")
 	if hdr == "" {
@@ -115,17 +122,21 @@ func extractToken(r *http.Request) (*oauth2.Token, error) {
 }
 
 func requestAuthInfo(o Options, t *oauth2.Token) ([]byte, error) {
+	return requestAuthInfoContext(context.Background(), AuthInfoURL, o, t)
+}
+
+func requestAuthInfoContext(ctx context.Context, baseURL string, o Options, t *oauth2.Token) ([]byte, error) {
 	var infoURL string
 	if o.AccessTokenInHeader {
-		infoURL = AuthInfoURL
+		infoURL = baseURL
 	} else {
 		var uv = make(url.Values)
 		uv.Set("access_token", t.AccessToken)
-		infoURL = AuthInfoURL + "?" + uv.Encode()
+		infoURL = baseURL + "?" + uv.Encode()
 	}
 
 	client := &http.Client{Transport: &Transport}
-	req, err := http.NewRequest("GET", infoURL, nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", infoURL, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -150,12 +161,26 @@ func RequestAuthInfo(t *oauth2.Token) ([]byte, error) {
 func ParseTokenContainer(t *oauth2.Token, data map[string]interface{}) (*TokenContainer, error) {
 	tdata := make(map[string]interface{})
 
-	ttype := data["token_type"].(string)
-	gtype := data["grant_type"].(string)
-
-	realm := data["realm"].(string)
-	exp := data["expires_in"].(float64)
-	tok := data["access_token"].(string)
+	ttype, ok := data["token_type"].(string)
+	if !ok {
+		return nil, errors.New("missing or invalid token_type")
+	}
+	gtype, ok := data["grant_type"].(string)
+	if !ok {
+		return nil, errors.New("missing or invalid grant_type")
+	}
+	realm, ok := data["realm"].(string)
+	if !ok {
+		return nil, errors.New("missing or invalid realm")
+	}
+	exp, ok := data["expires_in"].(float64)
+	if !ok {
+		return nil, errors.New("missing or invalid expires_in")
+	}
+	tok, ok := data["access_token"].(string)
+	if !ok {
+		return nil, errors.New("missing or invalid access_token")
+	}
 	if ttype != t.TokenType {
 		return nil, errors.New("token type mismatch")
 	}
@@ -163,9 +188,15 @@ func ParseTokenContainer(t *oauth2.Token, data map[string]interface{}) (*TokenCo
 		return nil, errors.New("mismatch between verify request and answer")
 	}
 
-	scopes := data["scope"].([]interface{})
+	scopes, ok := data["scope"].([]interface{})
+	if !ok {
+		return nil, errors.New("missing or invalid scope")
+	}
 	for _, scope := range scopes {
-		sscope := scope.(string)
+		sscope, ok := scope.(string)
+		if !ok {
+			return nil, errors.New("invalid scope entry")
+		}
 		sval, ok := data[sscope]
 		if ok {
 			tdata[sscope] = sval
@@ -185,7 +216,11 @@ func ParseTokenContainer(t *oauth2.Token, data map[string]interface{}) (*TokenCo
 }
 
 func getTokenContainerForToken(o Options, token *oauth2.Token) (*TokenContainer, error) {
-	body, err := requestAuthInfo(o, token)
+	return getTokenContainerForTokenContext(context.Background(), AuthInfoURL, o, token)
+}
+
+func getTokenContainerForTokenContext(ctx context.Context, baseURL string, o Options, token *oauth2.Token) (*TokenContainer, error) {
+	body, err := requestAuthInfoContext(ctx, baseURL, o, token)
 	if err != nil {
 		errorf("[Gin-OAuth] RequestAuthInfo failed caused by: %s", err)
 		return nil, err
@@ -210,6 +245,14 @@ func getTokenContainerForToken(o Options, token *oauth2.Token) (*TokenContainer,
 
 func GetTokenContainer(token *oauth2.Token) (*TokenContainer, error) {
 	return getTokenContainerForToken(Options{}, token)
+}
+
+// GetTokenContainerContext validates the token against the tokeninfo
+// endpoint o.Endpoint.TokenURL and returns its TokenContainer. The
+// request is bound to ctx and does not depend on the AuthInfoURL
+// global.
+func GetTokenContainerContext(ctx context.Context, o Options, token *oauth2.Token) (*TokenContainer, error) {
+	return getTokenContainerForTokenContext(ctx, o.Endpoint.TokenURL, o, token)
 }
 
 func getTokenContainer(o Options, ctx *gin.Context) (*TokenContainer, bool) {

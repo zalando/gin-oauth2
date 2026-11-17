@@ -170,6 +170,48 @@ Request:
     % curl -H "Authorization: Bearer $TOKEN" http://localhost:8081/api/privateGroup/
     {"message":"Hello from private to sszuecs member of teapot"}
 
+### Plain net/http (stdlib) Handlers
+
+The package `github.com/zalando/gin-oauth2/stdlib` provides the same
+token validation and authorization as middleware for standard
+`net/http` handlers. It returns `func(http.Handler) http.Handler`, so it
+works with `http.ServeMux` and routers like chi, gorilla/mux or alice.
+
+An access check has the signature
+`func(tc *ginoauth2.TokenContainer, r *http.Request) (*http.Request, bool)`.
+Instead of `ctx.Set`, a check returns a request whose context carries
+the values, which handlers read with `stdlib.Value`:
+
+    import (
+        "github.com/zalando/gin-oauth2/stdlib"
+        "github.com/zalando/gin-oauth2/zalando"
+        zalandostd "github.com/zalando/gin-oauth2/zalando/stdlib"
+    )
+
+    mw := stdlib.AuthChain(zalando.OAuth2Endpoint,
+        zalandostd.UidCheck(users),
+        zalandostd.GroupCheck(teams),
+    )
+    mux := http.NewServeMux()
+    mux.Handle("GET /api/private", mw(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+        uid, _ := stdlib.Value[string](r.Context(), "uid")
+        team, _ := stdlib.Value[string](r.Context(), "team")
+        fmt.Fprintf(w, "Hello %s of %s", uid, team)
+    })))
+
+Responses: `401` with a `Location` header pointing to
+`Endpoint.AuthURL` for a missing, invalid or expired token, `403` if no
+check grants access and `504` if the check takes longer than
+`ginoauth2.VarianceTimer`. The validated `TokenContainer` is available
+via `stdlib.TokenContainerFromContext`.
+
+Available checks in `zalando/stdlib`: `UidCheck`, `GroupCheck`,
+`ScopeCheck`, `ScopeAndCheck` and `NoAuthorization`. They set the same
+keys (`uid`, `team`, `cn`, scope names) as the gin versions. To write
+your own check, use `stdlib.WithValue(r, key, value)`.
+
+Run the example with `go run example/stdlib/main.go -logtostderr`.
+
 ### Google-Based Access
 
 As shown in [this great article](http://skarlso.github.io/2016/06/12/google-signin-with-go/) about Gin and Google signin, you have to create credentials for an "OAuth client ID." In your [Google Cloud Console](https://console.cloud.google.com), you will find "Credentials" in the "API Manager":
