@@ -114,10 +114,10 @@ func GroupCheckValues(ctx context.Context, at []AccessTuple, tc *ginoauth2.Token
 	return values, granted
 }
 
-// UidCheckValues is the framework independent implementation of
+// UIDCheckValues is the framework independent implementation of
 // UidCheck. It returns the values to expose to the handler ("uid" and
 // "cn") and whether access is granted.
-func UidCheckValues(at []AccessTuple, tc *ginoauth2.TokenContainer) (map[string]any, bool) {
+func UIDCheckValues(at []AccessTuple, tc *ginoauth2.TokenContainer) (map[string]any, bool) {
 	uid, ok := uidOf(tc)
 	if !ok {
 		return nil, false
@@ -235,7 +235,7 @@ func GroupCheck(at []AccessTuple) func(tc *ginoauth2.TokenContainer, ctx *gin.Co
 func UidCheck(at []AccessTuple) func(tc *ginoauth2.TokenContainer, ctx *gin.Context) bool {
 	ats := at
 	return func(tc *ginoauth2.TokenContainer, ctx *gin.Context) bool {
-		values, granted := UidCheckValues(ats, tc)
+		values, granted := UIDCheckValues(ats, tc)
 		apply(ctx, values)
 		return granted
 	}

@@ -33,7 +33,7 @@ func GroupCheck(at []zalando.AccessTuple) stdmw.AccessCheckFunction {
 //lint:ignore ST1003 public interface
 func UidCheck(at []zalando.AccessTuple) stdmw.AccessCheckFunction {
 	return func(tc *ginoauth2.TokenContainer, r *http.Request) (*http.Request, bool) {
-		values, granted := zalando.UidCheckValues(at, tc)
+		values, granted := zalando.UIDCheckValues(at, tc)
 		return check(values, granted, r)
 	}
 }
