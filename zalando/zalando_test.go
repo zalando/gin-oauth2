@@ -1,6 +1,7 @@
 package zalando
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -53,7 +54,7 @@ func TestRequestTeamInfo(t *testing.T) {
 		t.Errorf("ERR: Could not get TokenContainer from ginoauth2: %v", err)
 		t.FailNow()
 	}
-	resp, err := RequestTeamInfo(tc, TeamAPI)
+	resp, err := RequestTeamInfo(context.Background(), tc, TeamAPI)
 	if err != nil {
 		t.Errorf("ERR: Could not get TeamInfo for TokenContainer from TeamAPI: %v", err)
 		t.FailNow()

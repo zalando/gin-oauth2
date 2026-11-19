@@ -7,6 +7,7 @@ require (
 	github.com/gin-gonic/gin v1.12.0
 	github.com/golang/glog v1.2.5
 	github.com/google/go-github v17.0.0+incompatible
+	github.com/gorilla/sessions v1.4.0
 	github.com/stretchr/testify v1.12.1
 	github.com/szuecs/gin-glog v1.1.1
 	golang.org/x/oauth2 v0.38.0
@@ -39,7 +40,6 @@ require (
 	github.com/googleapis/gax-go/v2 v2.27.0 // indirect
 	github.com/gorilla/context v1.1.2 // indirect
 	github.com/gorilla/securecookie v1.1.2 // indirect
-	github.com/gorilla/sessions v1.4.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/klauspost/cpuid/v2 v2.4.0 // indirect
 	github.com/leodido/go-urn v1.4.0 // indirect

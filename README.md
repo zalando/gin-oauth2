@@ -170,6 +170,48 @@ Request:
     % curl -H "Authorization: Bearer $TOKEN" http://localhost:8081/api/privateGroup/
     {"message":"Hello from private to sszuecs member of teapot"}
 
+### Plain net/http (stdlib) Handlers
+
+The package `github.com/zalando/gin-oauth2/stdlib` provides the same
+token validation and authorization as middleware for standard
+`net/http` handlers. It returns `func(http.Handler) http.Handler`, so it
+works with `http.ServeMux` and routers like chi, gorilla/mux or alice.
+
+An access check has the signature
+`func(tc *ginoauth2.TokenContainer, r *http.Request) (*http.Request, bool)`.
+Instead of `ctx.Set`, a check returns a request whose context carries
+the values, which handlers read with `stdlib.Value`:
+
+    import (
+        "github.com/zalando/gin-oauth2/stdlib"
+        "github.com/zalando/gin-oauth2/zalando"
+        zalandostd "github.com/zalando/gin-oauth2/zalando/stdlib"
+    )
+
+    mw := stdlib.AuthChain(zalando.OAuth2Endpoint,
+        zalandostd.UidCheck(users),
+        zalandostd.GroupCheck(teams),
+    )
+    mux := http.NewServeMux()
+    mux.Handle("GET /api/private", mw(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+        uid, _ := stdlib.Value[string](r.Context(), "uid")
+        team, _ := stdlib.Value[string](r.Context(), "team")
+        fmt.Fprintf(w, "Hello %s of %s", uid, team)
+    })))
+
+Responses: `401` with a `Location` header pointing to
+`Endpoint.AuthURL` for a missing, invalid or expired token, `403` if no
+check grants access and `504` if the check takes longer than
+`ginoauth2.VarianceTimer`. The validated `TokenContainer` is available
+via `stdlib.TokenContainerFromContext`.
+
+Available checks in `zalando/stdlib`: `UidCheck`, `GroupCheck`,
+`ScopeCheck`, `ScopeAndCheck` and `NoAuthorization`. They set the same
+keys (`uid`, `team`, `cn`, scope names) as the gin versions. To write
+your own check, use `stdlib.WithValue(r, key, value)`.
+
+Run the example with `go run example/stdlib/main.go -logtostderr`.
+
 ### Google-Based Access
 
 As shown in [this great article](http://skarlso.github.io/2016/06/12/google-signin-with-go/) about Gin and Google signin, you have to create credentials for an "OAuth client ID." In your [Google Cloud Console](https://console.cloud.google.com), you will find "Credentials" in the "API Manager":
@@ -226,6 +268,32 @@ A handler will fetch user information from the gin.Context that's stored in goog
 - open [http://127.0.0.1:8081/login](http://127.0.0.1:8081/login) in your browser
 - In your browser, follow the login, and choose your identity to login with
 - You'll be redirected to the http://127.0.0.1:8081/auth endpoint, which should show your identity data
+
+#### Google with plain net/http
+
+`github.com/zalando/gin-oauth2/google/stdlib` provides the same sign-in for
+`net/http` handlers. There is no global state and no separate session
+middleware, a `Provider` holds the configuration and the cookie store:
+
+        import googlestd "github.com/zalando/gin-oauth2/google/stdlib"
+
+        provider, err := googlestd.NewFromFile(redirectURL, credFile, scopes, secret)
+        // or googlestd.New(googlestd.Config{...}) with ClientID, ClientSecret, SessionKey, ...
+
+        mux := http.NewServeMux()
+        mux.Handle("GET /login", provider.LoginHandler())
+        mux.Handle("GET /auth/{$}", provider.Auth()(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+                user, _ := googlestd.UserFromContext(r.Context()) // goauth.Userinfo
+                fmt.Fprintln(w, user.Email)
+        })))
+
+`Config.LoginURL` redirects unauthenticated users instead of returning 401.
+Session cookies use the same layout as the gin provider, so with the
+same secret and session name (`Config.SessionName`, default
+`ginoauth_google`) both accept each other's cookies. Cookies are
+`HttpOnly`, `SameSite=Lax` and `Secure` if the redirect URL is https.
+
+Run it with ```% go run example/google-stdlib/main.go -cred-file clientid.google.json```
 
 ### GitHub-Based Access
 
@@ -291,6 +359,27 @@ A handler will fetch user information from the gin.Context that's stored in gith
 - open [http://127.0.0.1:8081/login](http://127.0.0.1:8081/login) in your browser
 - In your browser, follow the login, and choose your identity to login with
 - You'll be redirected to the http://127.0.0.1:8081/auth endpoint, which should show your identity data
+
+#### GitHub with plain net/http
+
+`github.com/zalando/gin-oauth2/github/stdlib` provides the same sign-in for
+`net/http` handlers:
+
+        import githubstd "github.com/zalando/gin-oauth2/github/stdlib"
+
+        provider, err := githubstd.NewFromFile(redirectURL, credFile, scopes, secret)
+
+        mux := http.NewServeMux()
+        mux.Handle("GET /login", provider.LoginHandler())
+        mux.Handle("GET /auth/{$}", provider.Auth()(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+                user, _ := githubstd.UserFromContext(r.Context()) // githubstd.AuthUser
+                fmt.Fprintln(w, user.Login)
+        })))
+
+`Config.APIBaseURL` points the user lookup to a GitHub Enterprise
+instance. The default session name is `ginoauth_github`.
+
+Run it with ```% go run example/github-stdlib/main.go -cred-file clientid.github.json```
 
 ## Contributing/TODO
 
